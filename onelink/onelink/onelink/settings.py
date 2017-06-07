@@ -138,7 +138,7 @@ ALLOWED_HOSTS = ['192.168.200.2','192.168.200.2:8000','192.168.200.1','localhost
 #GMAIL CONNECTION DETAILS
 GMAIL_DETAIL={"EMAIL_HOST":"smtp.gmail.com","EMAIL_HOST_USER":"testeuphern@gmail.com","EMAIL_HOST_PASSWORD":"ApGf671!","EMAIL_USE_TLS" : True,"EMAIL_PORT":587}
 BASE_WEB_ADDRESS="http://192.168.200.2:8000/onelinkapp/"
-BASE_IP="http://192.168.200.2:8000"
-
+#BASE_IP="http://192.168.200.2:8000"
+BASE_IP="http://staging.euphern.com:8001"
 
 

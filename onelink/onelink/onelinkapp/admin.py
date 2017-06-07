@@ -7,6 +7,10 @@ from .models import ServiceCategory
 from .models import ServiceSubCategory
 from .models import ServiceMap
 from .models import ItemMap
+from .models import ServiceRequest
+from .models import ServiceNotification
+from .models import FavouriteService
+from .models import ProductCategory
 
 
 from .models import Stock
@@ -20,3 +24,7 @@ admin.site.register(ServiceCategory)
 admin.site.register(ServiceSubCategory)
 admin.site.register(ServiceMap)
 admin.site.register(ItemMap)
+admin.site.register(ServiceRequest)
+admin.site.register(ServiceNotification)
+admin.site.register(FavouriteService)
+admin.site.register(ProductCategory)

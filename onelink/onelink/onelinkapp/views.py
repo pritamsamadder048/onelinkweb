@@ -6,7 +6,8 @@ from django.http import HttpResponse
 
 
 import datetime
-
+import urllib
+from urllib.request import urlopen
 
 
 
@@ -115,6 +116,11 @@ from .serializers import ServiceMapSerializer
 from .models import ItemMap
 from .serializers import ItemMapSerializer
 
+# from .models import ServiceRequestChat
+# from .serializers import ServiceRequestChatSerializer
+
+from .models import FavouriteService
+from .serializers import FavouriteServiceSerializer
 
 # register the user
 class RegisterUser(APIView):
@@ -134,13 +140,14 @@ class RegisterUser(APIView):
             print("sign up data : ",signup_data)
 
             try:
-                if ( (not signup_data['email']) or (not signup_data['name'])  or (not signup_data['password'])or (not signup_data['mobile']) or (not signup_data['pincode']) or (not signup_data['address']) or (not signup_data['user_type'])):
+                if ( (not signup_data['mobile']) or (not signup_data['name'])  or (not signup_data['password']) or (not signup_data['pincode']) or (not signup_data['country'])  or (not signup_data['district'])   or (not signup_data['city'])   or (not signup_data['street'])  or (not signup_data['building'])   or (not signup_data['user_type'])):
 
                     #print("not all data",responsedata)
 
                     print(signup_data)
 
                     responsedata={"successstatus":"error","message":"please provide all the details necessary"}
+                    print(responsedata)
 
                     return Response(responsedata)
             except:
@@ -154,9 +161,9 @@ class RegisterUser(APIView):
 
 
             try:
-                ud = UserDetail.objects.get(email=signup_data['email'])
+                ud = UserDetail.objects.get(mobile=signup_data['mobile'])
                 if (ud):
-                    responsedata={"successstatus":"error","message":"the email id is already registered.Please login ."}
+                    responsedata={"successstatus":"error","message":"the mobile number is already registered.Please login ."}
                     return Response(responsedata)
 
             except UserDetail.DoesNotExist:
@@ -173,10 +180,16 @@ class RegisterUser(APIView):
                 print("init")
                 ud.full_name = signup_data['name']
 
-                ud.email = signup_data['email']
+                if signup_data.get('email',None) is not None:
+
+                    ud.email = signup_data["email"]
                 ud.mobile = signup_data['mobile']
                 ud.pincode=signup_data["pincode"]
-                ud.address=signup_data["address"]
+                ud.country=signup_data["country"]
+                ud.city=signup_data["city"]
+                ud.district=signup_data["district"]
+                ud.street=signup_data["street"]
+                ud.building=signup_data["building"]
                 ud.user_type = signup_data['user_type']
 
                 ud.set_password(signup_data['password'])
@@ -217,6 +230,91 @@ class RegisterUser(APIView):
 
         except:
 
+
+            print("in outer except")
+            responsedata = {"successstatus": "error", "message": "unknown error. Please try again"}
+            return Response(responsedata)
+
+
+
+
+
+
+class UpdateUser(APIView):
+    def post(self,request):
+        signup_data = {}
+        responsedata = {}
+
+        try:
+
+            print("trying to register", request.POST)
+
+            for key in request.POST:
+                signup_data[key] = request.POST[key].strip()
+            print("sign up data : ", signup_data)
+
+            try:
+                if ((not signup_data['id']) or (not signup_data['user_session_key']) or (not signup_data['mobile']) or (not signup_data['name']) or (not signup_data['password']) or (not signup_data['pincode']) or (not signup_data['country']) or (not signup_data['district']) or (not signup_data['city']) or (not signup_data['street']) or (not signup_data['building']) or (not signup_data['user_type'])):
+                    # print("not all data",responsedata)
+
+                    print(signup_data)
+
+                    responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                    print(responsedata)
+
+                    return Response(responsedata)
+            except:
+
+                # print("not all data except ","   ", responsedata)
+
+                print(signup_data)
+
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                return Response(responsedata)
+
+            try:
+                us = UserSession.objects.get(UserSession_key=signup_data['user_session_key'])
+
+
+                ud = UserDetail.objects.get(id=signup_data['id'])
+                if (ud):
+
+                    ud.full_name = signup_data['name']
+
+                    if signup_data.get('email', None) is not None:
+                        ud.email = signup_data["email"]
+                    ud.mobile = signup_data['mobile']
+                    ud.pincode = signup_data["pincode"]
+                    ud.country = signup_data["country"]
+                    ud.city = signup_data["city"]
+                    ud.district = signup_data["district"]
+                    ud.street = signup_data["street"]
+                    ud.building = signup_data["building"]
+                    ud.user_type = signup_data['user_type']
+
+                    #ud.set_password(signup_data['password'])
+
+                    print("trying to save data")
+
+                    ud.save()
+                    responsedata = {"successstatus": "ok","message": "Profile Updated Successfully"}
+                    return Response(responsedata)
+
+            except UserSession.DoesNotExist:
+                responsedata = {"successstatus": "error", "message": "Please Login First."}
+                print(responsedata)
+                return Response(responsedata)
+            except UserDetail.DoesNotExist:
+
+                responsedata={"successstatus":"error","message":"User Does Not Exists."}
+                print(responsedata)
+                return Response(responsedata)
+
+
+
+
+
+        except:
 
             print("in outer except")
             responsedata = {"successstatus": "error", "message": "unknown error. Please try again"}
@@ -295,8 +393,7 @@ class ResendVerificationLink(APIView):
             try:
                 us = UserSession.objects.get(UserSession_key=sesskey)
                 if us:
-                    ud = UserDetail.objects.get(
-                        id=us.UserDetail_ref.id)  # also can b done like##### ud = us.UserDetail_ref
+                    ud = UserDetail.objects.get(id=us.UserDetail_ref.id)  # also can b done like##### ud = us.UserDetail_ref
                     if (ud):
                         if not ud.validemail:
                             s=sendverificationlink_fun( ud.id)
@@ -491,7 +588,7 @@ class Login(APIView):
         print("login data :",login_data)
 
         try:
-            if((not login_data['email']) or (not login_data['password'])):
+            if((not login_data['mobile']) or (not login_data['password'])):
 
 
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
@@ -505,7 +602,8 @@ class Login(APIView):
             return Response(responsedata)
 
         try:
-            ud = UserDetail.objects.get(email=login_data['email'])
+
+            ud = UserDetail.objects.get(mobile=login_data['mobile'])
             # bodytext+="<p>user data available</p>"
 
             correctpassword = ud.check_password(login_data['password'])
@@ -515,37 +613,44 @@ class Login(APIView):
 
                 try:
                     print("correct password")
-                    us = UserSession.objects.get(email=ud.email)
+                    us = UserSession.objects.get(mobile=ud.mobile)
                     uskey = us.UserSession_key
                     request.session['user_session_key'] = uskey
+                    print("session available reinitialising the session")
 
-                    responsedata={"userid":ud.id,"user_type":ud.user_type,"areapincode":ud.pincode,'user_session_key':us.UserSession_key}
+                    #responsedata={"userid":ud.id,"user_type":ud.user_type,"areapincode":ud.pincode,'user_session_key':us.UserSession_key}
+                    sud=UserDetailSerializer(ud)
+                    responsedata = {"userdetail": sud.data,'user_session_key': us.UserSession_key}
                     print("after correct ",responsedata)
 
                     return Response(responsedata)
 
                 except:
                     try:
+                        print("No sessinon Available..creating new session..")
                         us.delete()
                     except:
                         pass
 
                 us = UserSession()
                 us.full_name = ud.full_name
-                us.email = ud.email
+                if ud.email:
+                    us.email = ud.email
                 us.User_Type=ud.user_type
+                us.mobile=ud.mobile
                 us.set_sessionkey()
                 uskey = us.UserSession_key  # session key for the user
                 us.UserDetail_id = ud.id
                 us.UserDetail_ref = ud
                 us.save()
                 request.session['user_session_key'] = uskey
+                sud=UserDetailSerializer(ud)
 
-                responsedata = {"userid": ud.id,"user_type":ud.user_type,"areapincode":ud.pincode , 'user_session_key': us.UserSession_key}
+                responsedata = {"userdetail": sud.data, 'user_session_key': us.UserSession_key}
                 print("New Login : ",responsedata)
                 return Response(responsedata)
             else:
-                responsedata={"successsatus":"error","message":"User name and password does not match"}
+                responsedata={"successsatus":"error","message":"Mobile and password does not match"}
                 return Response(responsedata)
 
         except UserDetail.DoesNotExist:
@@ -560,7 +665,7 @@ class Login(APIView):
             except:
                 pass
 
-            responsedata = {"successstatus": "error", "message": "your email id is not registered. please signup"}
+            responsedata = {"successstatus": "error", "message": "your Mobile Number is not registered. please signup"}
             return Response(responsedata)
 
         except :
@@ -576,6 +681,10 @@ class Login(APIView):
                     pass
 
                 responsedata = {"successstatus": "error", "message": "Unknown error occured. Please try again"}
+
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(True, exc_type, fname, exc_tb.tb_lineno)
                 return Response(responsedata)
 
 
@@ -630,13 +739,6 @@ class Logout(APIView):
 
 
 
-
-
-
-
-
-
-
 class GetServiceCategory(APIView):
 
     def get(self,request):
@@ -669,6 +771,41 @@ class GetServiceCategory(APIView):
         except:
             print("GetServiceCategory ERROR")
             responsedata={"successstatus":"Error","message":"No Service Category found"}
+            return Response(responsedata)
+
+
+class GetProductCategory(APIView):
+
+    def get(self,request):
+        responsedata={}
+        productcategorydata=[]
+
+        try:
+
+            pc=ProductCategory.objects.all()
+
+            if(pc):
+
+
+
+
+                for i in range(0,len(pc)):
+
+
+
+                    tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_image":settings.BASE_IP+pc[i].product_image.url}
+                    #print(tmpdata)
+                    productcategorydata.append(tmpdata)
+
+                #print(servicecategorydata)
+                #ssc=ServiceCategorySerializer(sc,many=True)
+                #print(ssc.data)
+                return Response(productcategorydata)
+            else:
+                raise ( Exception(ProductCategory.DoesNotExist))
+        except:
+            print("GetServiceCategory ERROR")
+            responsedata={"successstatus":"Error","message":"No Product Category found"}
             return Response(responsedata)
 
 
@@ -721,6 +858,7 @@ class RegisterService(APIView):
         try:
 
             for key in request.POST:
+
                 registerservice_data[key] = request.POST[key].strip()
 
             print("register service data : ", registerservice_data)
@@ -733,7 +871,7 @@ class RegisterService(APIView):
             print(registerservice_data['service_details'])
 
 
-            if((not registerservice_data['service_category_id']) or (not registerservice_data['serviceprovider_id']) or (not registerservice_data['service_name']) or (not registerservice_data['service_details']) or (not registerservice_data['areapincode'])):
+            if((not registerservice_data['service_category_id']) or (not registerservice_data['license_no']) or (not registerservice_data['under_gov']) or (not registerservice_data['serviceprovider_id']) or (not registerservice_data['service_name']) or (not registerservice_data['service_details']) or (not registerservice_data['areapincode'])):
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -772,8 +910,11 @@ class RegisterService(APIView):
                                 sm.serviceprovider_id=registerservice_data['serviceprovider_id']
                                 sm.service_name=registerservice_data['service_name']
                                 sm.service_details=registerservice_data['service_details']
+                                sm.license_no=registerservice_data['license_no']
+                                sm.under_gov=registerservice_data['under_gov']
                                 print("service_details : ",sm.service_details)
                                 sm.serviceprovider_email=ud.email
+                                sm.mobile=ud.mobile
                                 sm.service_category_id=registerservice_data['service_category_id']
                                 sm.service_ref = sc
                                 sm.areapincode=registerservice_data['areapincode']
@@ -868,7 +1009,7 @@ class UpdateService(APIView):
 
 
 
-            if((not updateservice_data['serviceprovider_id']) or (not updateservice_data['service_name']) or (not updateservice_data['areapincode']) or (not updateservice_data['servicemapid']) or (not updateservice_data['service_details']) ):
+            if((not updateservice_data['servicemapid'])  or (not updateservice_data['license_no']) or (not updateservice_data['under_gov']) or (not updateservice_data['serviceprovider_id']) or (not updateservice_data['service_name']) or (not updateservice_data['service_details']) or (not updateservice_data['areapincode']) ):
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -906,13 +1047,16 @@ class UpdateService(APIView):
                                 #sc = ServiceCategory.objects.get(id=int(updateservice_data['service_category_id']))
 
                                 sm = ServiceMap.objects.get(id=int(updateservice_data['servicemapid']))
-                                sm.serviceprovider_id=updateservice_data['serviceprovider_id']
-                                sm.service_name=updateservice_data['service_name']
+                                sm.serviceprovider_id = updateservice_data['serviceprovider_id']
+                                sm.service_name = updateservice_data['service_name']
                                 sm.service_details = updateservice_data['service_details']
-                                sm.serviceprovider_email=ud.email
-                                #sm.service_category_id=updateservice_data['service_category_id']
-                                #sm.service_ref = sc
-                                sm.areapincode=updateservice_data['areapincode']
+                                sm.license_no = updateservice_data['license_no']
+                                sm.under_gov = updateservice_data['under_gov']
+                                #print("service_details : ", sm.service_details)
+                                sm.serviceprovider_email = ud.email
+                                sm.mobile = ud.mobile
+
+                                sm.areapincode = updateservice_data['areapincode']
 
                                 sm.save()
 
@@ -1009,7 +1153,7 @@ class DeleteService(APIView):
 
                     try:
 
-                        ud=UserDetail(id=us.UserDetail_id)
+                        ud=UserDetail.objects.get(id=us.UserDetail_id)
                         if(ud):
                             try:
                                 sm = ServiceMap.objects.get(id=int(deleteservice_data['service_id']),serviceprovider_id=ud.id)
@@ -1105,14 +1249,16 @@ class GetMyServices(APIView):
 
                     try:
 
-                        ud=UserDetail(id=us.UserDetail_id)
+                        ud=UserDetail.objects.get(id=us.UserDetail_id)
                         if(ud):
                             try:
-                                sm = ServiceMap.objects.filter(serviceprovider_id=int(getservice_data['id']))
+                                sm = ServiceMap.objects.filter(serviceprovider_id=int(getservice_data['id']))#.order_by("-id")
 
                                 if (sm):
                                     ssm = ServiceMapSerializer(sm, many=True)
-                                    print(Response(ssm.data))
+
+                                    #print("sm : ",sm)
+                                    print(ssm.data)
                                     return Response(ssm.data)
 
                                 else:
@@ -1185,7 +1331,7 @@ class GetMySingleService(APIView):
 
                     try:
 
-                        ud = UserDetail(id=us.UserDetail_id)
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud):
                             try:
                                 sm = ServiceMap.objects.get(id=int(getservice_data["service_id"]))
@@ -1240,7 +1386,8 @@ class GetMySingleService(APIView):
 ############################################################################################################################
 ###########################################  Item Section ##################################################################
 
-
+from .models import ProductCategory
+from .serializers import ProductCategorySerializer
 
 class AddItem(APIView):
 
@@ -1255,13 +1402,15 @@ class AddItem(APIView):
                 additem_data[key] = request.POST[key].strip()
 
 
-            if((not additem_data['serviceprovider_id']) or (not additem_data['item_name']) or (not additem_data['item_details']) or (not additem_data['service_category_id'])    or (not request.FILES['item_image'])  or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
+            if((not additem_data['serviceprovider_id']) or (not additem_data['user_session_key'])  or (not additem_data['item_name']) or (not additem_data['item_details']) or (not additem_data['item_category_id'])      or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
 
-
-            additem_data['item_image']=request.FILES['item_image']
+            if request.FILES.get("item_image",None) is not None:
+                additem_data['item_image']=request.FILES['item_image']
+            else:
+                additem_data["item_image"]=None
             print("Register service data : ",additem_data)
 
             if (request.session.has_key('user_session_key')):
@@ -1288,16 +1437,17 @@ class AddItem(APIView):
 
 
                             try:
-                                sc = ServiceCategory.objects.get(id=int(additem_data['service_category_id']))
+                                sc = ProductCategory.objects.get(id=int(additem_data['product_category_id']))
 
                                 im = ItemMap()
                                 im.serviceprovider_id=additem_data['serviceprovider_id']
                                 im.service_name=additem_data['item_name']
                                 im.service_details=additem_data['item_details']
                                 im.serviceprovider_email=ud.email
-                                im.service_category_id=int(additem_data['service_category_id'])
-                                im.service_ref=sc
-                                im.item_image=additem_data['item_image']
+                                im.product_category_id=int(additem_data['product_category_id'])
+                                im.product_ref=sc
+                                if  request.FILES.get('item_image',None) is not None:
+                                    im.item_image=additem_data['item_image']
                                 #im.areapincode=additem_data['areapincode']
                                 im.item_features=additem_data['item_features']
                                 im.item_MRP=additem_data['item_MRP']
@@ -1306,16 +1456,13 @@ class AddItem(APIView):
 
                                 im.save()
 
-                                responsedata={"successstatus":"ok","message":"You have successfully registered your service"}
+                                responsedata={"successstatus":"ok","message":"item successfully added"}
                                 return  Response(responsedata)
 
-                            except ServiceMap.DoesNotExist:
-                                responsedata = {"successstatus": "error", "message": "No Services Available"}
-                                print(responsedata)
-                                return  Response(responsedata)
 
-                            except ServiceCategory.DoesNotExist:
-                                responsedata = {"successstatus": "error", "message": "Service category not available"}
+
+                            except ProductCategory.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "Product category not available"}
                                 print(responsedata)
                                 return  Response(responsedata)
 
@@ -1358,7 +1505,7 @@ class AddItem(APIView):
         except:
 
             responsedata = {"successstatus": "error", "message": "Unknown Error"}
-            print("in outer except : ",responsedata)
+            print("in outer except : AddItem : ",responsedata)
             return Response(responsedata)
 
 
@@ -1375,7 +1522,7 @@ class UpdateItem(APIView):
             for key in request.POST:
                 updateitem_data[key] = request.POST[key].strip()
 
-            if ((not updateitem_data['itemmap_id']) or (not updateitem_data['serviceprovider_id']) or (not updateitem_data['item_name']) or (not updateitem_data['service_category_id']) or (not updateitem_data['item_details'])  or (not request.FILES['item_image']) or (not updateitem_data['item_MRP']) or (not updateitem_data['item_SLP']) or (not updateitem_data['item_features'])):
+            if ((not updateitem_data['itemmap_id'])or (not updateitem_data['user_session_key'])  or (not updateitem_data['serviceprovider_id']) or (not updateitem_data['item_name'])  or (not updateitem_data['item_details'])  or (not request.FILES['item_image']) or (not updateitem_data['item_MRP']) or (not updateitem_data['item_SLP']) or (not updateitem_data['item_features'])):
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -1389,6 +1536,12 @@ class UpdateItem(APIView):
                 sesskey = request.POST['user_session_key']
                 print("sess key ", sesskey)
 
+
+            if request.FILES.get("item_image",None) is not None:
+                updateitem_data['item_image']=request.FILES['item_image']
+            else:
+                updateitem_data["item_image"]=None
+
             try:
                 us = UserSession.objects.get(UserSession_key=sesskey)
                 if (us.User_Type == 0):
@@ -1400,18 +1553,17 @@ class UpdateItem(APIView):
                         if (ud):
 
                             if (not ud.user_type == 0):
-                                responsedata = {"successstatus": "error",
-                                                "message": "you are not registered as a service provider"}
+                                responsedata = {"successstatus": "error","message": "you are not registered as a service provider"}
                                 print(responsedata)
                                 return Response(responsedata)
 
                             try:
-                                sc = ServiceCategory.objects.get(id=int(updateitem_data['service_category_id']))
+                                #sc = ServiceCategory.objects.get(id=int(updateitem_data['service_category_id']))
 
                                 im = ItemMap.objects.get(id=int(updateitem_data['itemmap_id']))
                                 im.serviceprovider_id = updateitem_data['serviceprovider_id']
-                                im.service_category_id = int(updateitem_data['service_category_id'])
-                                im.service_ref = sc
+                                #im.service_category_id = int(updateitem_data['service_category_id'])
+                                #im.service_ref = sc
                                 im.service_name = updateitem_data['item_name']
                                 im.service_details = updateitem_data['item_details']
                                 im.serviceprovider_email = ud.email
@@ -1423,20 +1575,18 @@ class UpdateItem(APIView):
 
                                 im.save()
 
-                                responsedata = {"successstatus": "ok",
-                                                "message": "You have successfully registered your service"}
+                                responsedata = {"successstatus": "ok","message": "successfully Updated Your Item"}
                                 return Response(responsedata)
 
-                            except ServiceMap.DoesNotExist:
-                                responsedata = {"successstatus": "error", "message": "No Services Available"}
+                            except ItemMap.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No Item Available"}
                                 print(responsedata)
                                 return Response(responsedata)
 
-                            except ServiceCategory.DoesNotExist:
-                                responsedata = {"successstatus": "error",
-                                                "message": "Service category not available"}
-                                print(responsedata)
-                                return Response(responsedata)
+                            # except ServiceCategory.DoesNotExist:
+                            #     responsedata = {"successstatus": "error","message": "Service category not available"}
+                            #     print(responsedata)
+                            #     return Response(responsedata)
 
 
                         else:
@@ -1510,35 +1660,31 @@ class DeleteItem(APIView):
 
                     try:
 
-                        ud = UserDetail(id=us.UserDetail_id)
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud):
                             try:
-                                im = ItemMap.objects.get(id=int(deleteitem_data['item_id']),
-                                                            serviceprovider_id=ud.id)
+                                im = ItemMap.objects.get(id=int(deleteitem_data['item_id']),serviceprovider_id=ud.id)
 
                                 if (im):
                                     try:
                                         im.delete()
-                                        responsedata = {"successstatus": "ok",
-                                                        "message": "successfully deleted the item"}
+                                        responsedata = {"successstatus": "ok","message": "successfully deleted the item"}
                                         print(responsedata)
                                         return Response(responsedata)
                                     except:
-                                        responsedata = {"successstatus": "error",
-                                                        "message": "could not delete service try again later"}
+                                        responsedata = {"successstatus": "error","message": "could not delete Item try again later"}
                                         return Response(responsedata)
 
 
                                 else:
-                                    responsedata = {"successstatus": "error",
-                                                    "message": "No Services Available"}
+                                    responsedata = {"successstatus": "error","message": "No Item Available"}
                                     print(responsedata)
                                     return Response(responsedata)
 
 
 
                             except ItemMap.DoesNotExist:
-                                responsedata = {"successstatus": "error", "message": "No Services Available"}
+                                responsedata = {"successstatus": "error", "message": "No Item Available"}
                                 print(responsedata)
                                 return Response(responsedata)
 
@@ -1604,7 +1750,7 @@ class GetMyItems(APIView):
 
                     try:
 
-                        ud = UserDetail(id=us.UserDetail_id)
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud):
                             try:
                                 im = ItemMap.objects.filter(serviceprovider_id=int(getitem_data['id']))
@@ -1615,15 +1761,14 @@ class GetMyItems(APIView):
                                     return Response(sim.data)
 
                                 else:
-                                    responsedata = {"successstatus": "error",
-                                                    "message": "No Services Available"}
+                                    responsedata = {"successstatus": "error","message": "No Item Available"}
                                     print(responsedata)
                                     return Response(responsedata)
 
 
 
-                            except ServiceMap.DoesNotExist:
-                                responsedata = {"successstatus": "error", "message": "No Services Available"}
+                            except ItemMap.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No Item Available"}
                                 print(responsedata)
                                 return Response(responsedata)
 
@@ -1655,8 +1800,295 @@ class GetMyItems(APIView):
             print("in getmyitems : outer except : ", responsedata)
             return Response(responsedata)
 
+from .serializers import ProviderNotificationSerializer
+from .models import ServiceNotification
+class GetMyNotifications(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getnoti_data = {}
+        notidata=[]
+        tn={}
+
+        try:
+
+            for key in request.POST:
+                getnoti_data[key] = request.POST[key].strip()
+
+            print(getnoti_data)
+
+            if ((not getnoti_data['id']) or (not getnoti_data['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", getnoti_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                sud=UserDetailSerializer(ud)
+                                #print("ud : ",ud.id).order_by("-request_time")
+                                sn = ServiceNotification.objects.filter(serviceprovider_id=int(getnoti_data['id'])).order_by("-request_time")
+                                #print("sn : ",sn)
+                                if (sn):
+
+                                    # print("sn : ",sn)
+                                    # for i in range(0,len(sn)):
+                                    #     print("sn[i].id : ",sn[i].id)
+                                    #     print("sn[i].serviceprovider_id : ",sn[i].serviceprovider_id)
+                                    #     print("sn[i].servicerequest_id : ",sn[i].servicerequest_id)
+                                    #     print("sn[i].request_time : ",sn[i].request_time)
+                                    #     print("sn[i].read : ",sn[i].read)
+                                    #     print("sn[i].notification : ",sn[i].notification)
+                                    #
+                                    #     tn={"id":sn[i].id,"serviceprovider_id":sn[i].serviceprovider_id,"servicerequest_id":sn[i].servicerequest_id,"request_time":sn[i].request_time,"read":sn[i].read,"notification":sn[i].notofication}
+                                    #     notidata.append(tn)
+                                    # print("notidata : ",notidata)
+
+                                    ssn = ProviderNotificationSerializer(sn, many=True)
+                                    #print("Items : ",ssn.data)
+                                    return Response(ssn.data)
+
+                                else:
+                                    responsedata = {"successstatus": "error","message": "No Services Available"}
+                                    print("notifications : ", responsedata)
+                                    return Response(responsedata)
 
 
+
+                            except ServiceNotification.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No Services Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in getmynotifications : outer except : ", responsedata)
+            print("Error : ",e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+from .models import OrderHistory
+from .serializers import OrderHistorySerializer
+
+class ConfirmRequest(APIView):
+    def post(self,request):
+
+        responsedata = {}
+        requestdata={}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['request_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                sr=ServiceRequest.objects.get(id=int(requestdata["request_id"]),serviceprovider_id=ud.id)
+                                sr.service_status=1
+                                sr.save()
+
+                                cr=OrderHistory()
+
+                                cr.user_id=sr.user_id
+                                cr.user_ref=sr.user_ref
+                                cr.serviceprovider_id=sr.serviceprovider_id
+                                cr.serviceprovider_ref=sr.serviceprovider_ref
+                                cr.service_map_id=sr.service_map_id
+                                cr.service_map_ref=sr.service_map_ref
+                                cr.service_request_id=sr.service_request_id
+                                cr.service_request_ref=sr.service_request_ref
+
+                                cr.save()
+
+                                responsedata={"successstatus":"ok","bookingid":cr.id}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except ServiceRequest.DoesNotExist:
+                                responsedata={"successstatus":"error","messsage":'No request availabe for you with given details'}
+                                print(responsedata)
+                                return  Response(responsedata)
+
+                    except Exception as e:
+                        responsedata={"successstatus":"ok","message":"Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ",e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in Confirm Order : outer except : ", responsedata)
+            print("Error : ",e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+class GetMyHistory(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                cr = OrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+
+                                scr=OrderHistorySerializer(cr,many=True)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "ok", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
 
 
 ##############################################################################################################################
@@ -1712,14 +2144,18 @@ class GetSingleProvider(APIView):
 
         try:
 
-            sm = ServiceMap.objects.get(service_category_id=int(serviceid))
+            print(ServiceMap._meta.pk.name)
+
+            sm = ServiceMap.objects.get(id=int(serviceid))
             if (sm):
+                print("id : ",sm.id)
                 ssm = ServiceMapSerializer(sm)
                 print(ssm.data)
                 responsedata["service_details"] = ssm.data
 
             ud = UserDetail.objects.get(id=int(sm.serviceprovider_id))
             if (ud):
+
                 sud=UserDetailSerializer(ud)
                 print(sud.data)
                 responsedata["provider_details"]=sud.data
@@ -1731,6 +2167,8 @@ class GetSingleProvider(APIView):
                 responsedata = {"successstatus": "error", "message": "No Services Available"}
                 print(responsedata)
                 return Response(responsedata)
+
+            print("Final service data : ",responsedata)
             return Response(responsedata)
 
 
@@ -1744,7 +2182,858 @@ class GetSingleProvider(APIView):
             responsedata = {"successstatus": "error", "message": "Unknown Error"}
 
             print("In GetProvidersList Outer Except : ",responsedata)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
             return  Response(responsedata)
+
+
+from .models import  ServiceRequest
+from .serializers import ServiceRequestSerializer
+
+from .models import ServiceNotification
+from .serializers import ServiceRequestSerializer
+class RequestService(APIView):
+
+    def post(self,request):
+        responsedata={}
+        requestdata={}
+        userstat=0
+        service_request_address=None
+        areapincode=None
+
+
+        try:
+            for key in request.POST:
+                requestdata[key]=request.POST[key]
+
+            print("obtained request service data : ",requestdata)
+
+            if ((not requestdata["serviceprovider_id"]) or (not requestdata["user_id"]) or (not requestdata["service_map_id"]) or (not requestdata['user_session_key'])) :
+                responsedata={"successstatus":"error","message":"please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us=UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud=UserDetail.objects.get(id=int(requestdata["user_id"]))
+            userstat+=1
+            sd=UserDetail.objects.get(id=int(requestdata["serviceprovider_id"]))
+            userstat+=1
+
+            smap=ServiceMap.objects.get(id=int(requestdata["service_map_id"]))
+
+            if(requestdata.get("service_request_address",None) is None):
+                service_request_address=ud.address
+            else:
+                service_request_address=requestdata["service_request_address"]
+
+            if(requestdata.get("areapincode",None) is None):
+                areapincode=ud.pincode
+            else:
+                areapincode=int(requestdata["areapincode"])
+
+            sm=ServiceMap.objects.get(id=int(requestdata["service_map_id"]))
+
+            sr=ServiceRequest()
+            sr.user_id=ud.id
+            sr.user_ref=ud
+            sr.serviceprovider_id=sd.id
+            sr.serviceprovider_ref=sd
+            sr.service_map_id=sm.id
+            sr.service_map_ref=sm
+            sr.service_category_id=sm.service_category_id
+            sr.areapincode=areapincode
+            sr.service_request_address=service_request_address
+
+            sr.save()
+
+            sn=ServiceNotification()
+            sn.serviceprovider_id=sr.serviceprovider_id
+            sn.serviceprovider_ref=sr.serviceprovider_ref
+            sn.servicerequest_id=sr.service_category_id
+            sn.servicerequest_ref=sr
+            sn.read=False
+            #sn.save()
+            sn.notification = sn.getMessage()
+            sn.save()
+
+
+
+            responsedata={"successstatus":"ok","message":"You have successfully requested for the service","request_id":sr.id}
+
+            print(responsedata)
+            return  Response(responsedata)
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error","message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            if userstat==0:
+                responsedata={"successstatus":"error","message":"the user doesnot exists"}
+
+            elif userstat==2:
+                responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error", "message": "the service you are requesting is not available any more"}
+            print(responsedata)
+            return  Response(responsedata)
+
+
+
+        except Exception as e:
+
+
+            print("error occured in outer except RequestService ")
+            print("error : ",e)
+            responsedata={"successstatus":"error","message":"error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return  Response(responsedata)
+
+
+
+class RequestQuickService(APIView):
+
+    def post(self,request):
+        responsedata={}
+        requestdata={}
+        userstat=0
+        service_request_address=None
+        areapincode=None
+
+
+        try:
+            for key in request.POST:
+                requestdata[key]=request.POST[key]
+
+            print("obtained request service data : ",requestdata)
+
+            if ((not requestdata["user_id"])or (not requestdata['user_session_key']) or (not requestdata['service_category']) or (not requestdata['pincode']) or (not requestdata['request_detail'])) :
+                responsedata={"successstatus":"error","message":"please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us=UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud=UserDetail.objects.get(id=int(requestdata["user_id"]))
+            userstat+=1
+
+
+
+
+            if(requestdata.get("service_request_address",None) is None):
+                service_request_address="Not Provided"
+            else:
+                service_request_address=requestdata["service_request_address"]
+
+            if(requestdata.get("pincode",None) is None):
+                areapincode=ud.pincode
+            else:
+                areapincode=int(requestdata["pincode"])
+
+            sm=ServiceMap.objects.filter(service_category_id=int(requestdata['service_category']),areapincode=areapincode).order_by("-register_time")
+            if(len(sm)<=0):
+                responsedata = {"successstatus": "error", "message": "No Service Available in this Area"}
+
+                print(responsedata)
+                return Response(responsedata)
+            requestsent=0
+            for i in range(0,len(sm)):
+                print("requesting : ",i)
+
+                try :
+                    sd = UserDetail.objects.get(id=sm[i].serviceprovider_id)
+                    requestsent+=1
+                except :
+                    continue
+                sr=ServiceRequest()
+                sr.user_id=ud.id
+                sr.user_ref=ud
+                sr.serviceprovider_id=sd.id
+                sr.serviceprovider_ref=sd
+                sr.service_map_id=sm[i].id
+                sr.service_map_ref=sm[i]
+                sr.service_category_id=sm[i].service_category_id
+                sr.areapincode=areapincode
+                sr.service_request_address=service_request_address
+                sr.request_detail=requestdata['request_detail']
+
+                sr.save()
+
+                sn=ServiceNotification()
+                sn.serviceprovider_id=sr.serviceprovider_id
+                sn.serviceprovider_ref=sr.serviceprovider_ref
+                sn.servicerequest_id=sr.service_category_id
+                sn.servicerequest_ref=sr
+                sn.read=False
+                #sn.save()
+                sn.notification = sn.getMessage()
+                sn.save()
+
+
+            if(requestsent<=0):
+                responsedata = {"successstatus": "error", "message": "No Service Available in this Area"}
+
+                print(responsedata)
+                return Response(responsedata)
+
+            responsedata={"successstatus":"ok","message":"You have successfully requested for a quick service"}
+
+            print(responsedata)
+            return  Response(responsedata)
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error","message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            if userstat==0:
+                responsedata={"successstatus":"error","message":"the user doesnot exists"}
+
+            elif userstat==2:
+                responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error", "message": "the service you are requesting is not available any more"}
+            print(responsedata)
+            return  Response(responsedata)
+
+
+
+        except Exception as e:
+
+
+            print("error occured in outer except RequestService ")
+            print("error : ",e)
+            responsedata={"successstatus":"error","message":"error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return  Response(responsedata)
+
+
+#
+# class SendRequestMessage(APIView):
+#     def post(self,request):
+#         responsedata = {}
+#         requestdata = {}
+#         #userstat = 0
+#         service_request_address = None
+#         areapincode = None
+#
+#         try:
+#             for key in request.POST:
+#                 requestdata[key] = request.POST[key]
+#
+#             print("obtained request service data : ", requestdata)
+#
+#             if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicerequest_id']) or (not requestdata['message'])):
+#                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+#                 print(responsedata)
+#                 return Response(responsedata)
+#             us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+#
+#             ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+#
+#             sr=ServiceRequest.objects.get(id=int(requestdata["servicerequest_id"]))
+#             smid=sr.service_map_id
+#             sm=ServiceMap.objects.get(id=smid)
+#             src=ServiceRequestChat()
+#             if ud.id==sr.user_id:
+#                 src.sender_id=ud.id
+#                 src.sender_ref=ud
+#                 src.receiver_id=sr.serviceprovider_id
+#                 src.receiver_ref=sr.serviceprovider_ref
+#                 src.customer_id=ud.id
+#                 src.service_map_id=sm.id
+#                 src.service_map_ref=sm
+#                 src.request_id=sr.id
+#                 src.request_ref=sr
+#                 src.message_detail=requestdata["message"]
+#                 src.read=False
+#                 src.save()
+#             elif ud.id==sr.serviceprovider_id:
+#                 sr.receiver_id=ud.id
+#                 src.receiver_ref=ud
+#                 src.sender_id=sr.user_id
+#                 src.sender_ref=sr.user_ref
+#                 src.customer_id=sr.user_id
+#                 src.service_map_id=sm.id
+#                 src.service_map_ref=sm
+#                 src.request_id=sr.id
+#                 src.request_ref=sr
+#                 src.message_detail=requestdata["message"]
+#                 src.read=False
+#                 src.save()
+#             else:
+#                 responsedata={"successstatus":"error","message":"you can only send message to a provider you have requested service to"}
+#                 print(responsedata)
+#                 return  Response(responsedata)
+#             responsedata={"successstatus":"ok","message":"you have successfully sent a message "}
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#
+#
+#         except UserSession.DoesNotExist:
+#             responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+#             print(responsedata)
+#             return Response(responsedata)
+#         except UserDetail.DoesNotExist:
+#             responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+#
+#
+#
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except ServiceMap.DoesNotExist:
+#
+#             responsedata = {"successstatus": "error",
+#                             "message": "the service you are requesting is not available any more"}
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except ServiceRequest.DoesNotExist:
+#             responsedata={"successstatus":"error","message":"the service doesnot exist anymore"}
+#             print(responsedata)
+#             return  Response(responsedata)
+#
+#         except Exception as e:
+#
+#             print("error occured in outer except RequestService ")
+#             print("error : ", e)
+#             responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+#             exc_type, exc_obj, exc_tb = sys.exc_info()
+#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#             print(True, exc_type, fname, exc_tb.tb_lineno)
+#             return Response(responsedata)
+#
+# class GetRequestMessages(APIView):
+#     def post(self,request):
+#         responsedata = {}
+#         requestdata = {}
+#         # userstat = 0
+#         service_request_address = None
+#         areapincode = None
+#
+#         try:
+#             for key in request.POST:
+#                 requestdata[key] = request.POST[key]
+#
+#             print("obtained request service data : ", requestdata)
+#
+#             if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicerequest_id'])):
+#                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+#                 print(responsedata)
+#                 return Response(responsedata)
+#             us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+#
+#             ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+#
+#             sr = ServiceRequest.objects.get(id=int(requestdata["servicerequest_id"]))
+#             smid = sr.service_map_id
+#             sm = ServiceMap.objects.get(id=smid)
+#             src = ServiceRequestChat.objects.filter(request_id=int(requestdata["servicerequest_id"]),customer_id=ud.id).order_by("-sending_time")
+#             sersrc=ServiceRequestChatSerializer(src,many=True)
+#             responsedata={"successstatus":"ok","messages":sersrc.data}
+#             print(responsedata)
+#             return  Response(responsedata)
+#
+#
+#
+#
+#
+#         except UserSession.DoesNotExist:
+#             responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+#             print(responsedata)
+#             return Response(responsedata)
+#         except UserDetail.DoesNotExist:
+#             responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+#
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except ServiceMap.DoesNotExist:
+#
+#             responsedata = {"successstatus": "error",
+#                             "message": "the service you are requesting is not available any more"}
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except ServiceRequest.DoesNotExist:
+#             responsedata = {"successstatus": "error", "message": "the service doesnot exist anymore"}
+#             print(responsedata)
+#             return Response(responsedata)
+#         except ServiceRequestChat.DoesNotExist:
+#             responsedata={"successstatus":"error","message":"no message available for this convertetions"}
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except Exception as e:
+#
+#             print("error occured in outer except RequestService ")
+#             print("error : ", e)
+#             responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+#             exc_type, exc_obj, exc_tb = sys.exc_info()
+#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#             print(True, exc_type, fname, exc_tb.tb_lineno)
+#             return Response(responsedata)
+#
+        
+        
+class AddToFavouriteService(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        userstat = 0
+        service_request_address = None
+        areapincode = None
+
+        try:
+            for key in request.POST:
+                requestdata[key] = request.POST[key]
+
+            print("obtained request service data : ", requestdata)
+
+            if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicemap_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+            userstat+=1
+
+            userstat+=1
+
+
+            try:
+                sm = ServiceMap.objects.get(id=int(requestdata["servicemap_id"]))
+                if(sm):
+                    try:
+                        fsp=FavouriteService.objects.get(user_id=ud.id,servicemap_id=sm.id)
+                        responsedata = {"successstatus": "error","message": "service is already in your favourites list"}
+                        print(responsedata)
+                        return Response(responsedata)
+                    except FavouriteService.DoesNotExist:
+                        pass
+                    #print("user id : ",ud.id)
+                    #print("service provider id : ",sp.id)
+                    fs = FavouriteService()
+                    fs.user_id = ud.id
+                    fs.servicemap_id = sm.id
+                    fs.servicemap_ref = sm
+                    fs.save()
+
+                    responsedata = {"successstatus": "ok", "message": "added to your favourites list"}
+                    print(responsedata)
+                    return Response(responsedata)
+
+
+            except ServiceMap.DoesNotExist:
+                responsedata={"successstatus":"error","message":"the service does not exists"}
+                print(responsedata)
+                return Response(responsedata)
+
+            except Exception as e:
+                responsedata={"successstatus":"error","message":"unknown error occured while Adding To Favourite"}
+                print("error occured")
+                print("Error : ",e)
+                print(responsedata)
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(True, exc_type, fname, exc_tb.tb_lineno)
+                return  Response(responsedata)
+
+
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the user does not exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error","message": "the service you are requesting is not available any more"}
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceRequest.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the service doesnot exist anymore"}
+            print(responsedata)
+            return Response(responsedata)
+
+
+        except Exception as e:
+
+            print("error occured in outer except RequestService ")
+            print("error : ", e)
+            responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+class RemoveFavouriteService(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        userstat = 0
+        service_request_address = None
+        areapincode = None
+
+        try:
+            for key in request.POST:
+                requestdata[key] = request.POST[key]
+
+            print("obtained request service data : ", requestdata)
+
+            if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicemap_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+            userstat += 1
+
+            userstat += 1
+
+            try:
+                sm = ServiceMap.objects.get(id=int(requestdata["servicemap_id"]))
+                if (sm):
+                    try:
+                        fsp = FavouriteService.objects.get(user_id=ud.id, servicemap_id=sm.id)
+                        fsp.delete()
+                        responsedata = {"successstatus": "ok","message": "service is deleted from your favourites list"}
+                        print(responsedata)
+                        return Response(responsedata)
+                    except FavouriteService.DoesNotExist:
+                        responsedata = {"successstatus": "error","message": "service is not in your favourites list"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+
+            except ServiceMap.DoesNotExist:
+                responsedata = {"successstatus": "error", "message": "the service does not exists"}
+                print(responsedata)
+                return Response(responsedata)
+
+            except Exception as e:
+                responsedata = {"successstatus": "error", "message": "unknown error occured while Adding To Favourite"}
+                print("error occured")
+                print("Error : ", e)
+                print(responsedata)
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(True, exc_type, fname, exc_tb.tb_lineno)
+                return Response(responsedata)
+
+
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the user does not exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+
+
+        except Exception as e:
+
+            print("error occured in outer except RequestService ")
+            print("error : ", e)
+            responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+class GetFavouriteServices(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        favservice=[]
+        # userstat = 0
+        service_request_address = None
+        areapincode = None
+
+        try:
+            for key in request.POST:
+                requestdata[key] = request.POST[key]
+
+            print("obtained request service data : ", requestdata)
+
+            if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) ):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+
+
+            fs = FavouriteService.objects.filter(user_id=ud.id)
+            sfs=FavouriteServiceSerializer(fs,many=True)
+
+            for i in range (0,len(fs)):
+                try:
+                    sm=ServiceMap.objects.get(id=fs[i].servicemap_id)
+                    #tmpdata = {"fav_id":fs[i].id,"service_id": sc.id, "service_name": sc.service_name, "service_detail": sc.service_detail,"service_image": settings.BASE_IP + sc.service_image.url}
+                    ssm=ServiceMapSerializer(sm)
+                    favservice.append(ssm.data)
+                except:
+                    continue
+
+
+            responsedata = {"successstatus": "ok", "favservices":favservice}
+            #print(responsedata)
+            print("succesfully fetched the favourites list")
+            return Response(responsedata)
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error",
+                            "message": "the service you are requesting is not available any more"}
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceRequest.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the service doesnot exist anymore"}
+            print(responsedata)
+            return Response(responsedata)
+
+        except FavouriteService.DoesNotExist:
+            responsedata={"successstatus":"error","message":"No favourites list available for this user"}
+            print(responsedata)
+            return Response(responsedata)
+        except Exception as e:
+
+            print("error occured in outer except RequestService ")
+            print("error : ", e)
+            responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+class IsInFavourite(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        favservice = []
+        # userstat = 0
+        service_request_address = None
+        areapincode = None
+
+        try:
+            for key in request.POST:
+                requestdata[key] = request.POST[key]
+
+            print("obtained request service data : ", requestdata)
+
+            if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicemap_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+
+            try:
+                sm = ServiceMap.objects.get(id=int(requestdata["servicemap_id"]))
+                if(sm):
+                    try:
+                        fsp=FavouriteService.objects.get(user_id=ud.id,servicemap_id=sm.id)
+                        responsedata = {"successstatus": "ok","message": "service is in your favourites list","isfavourite":True}
+                        print(responsedata)
+                        return Response(responsedata)
+                    except FavouriteService.DoesNotExist:
+                        responsedata = {"successstatus": "error", "message": "service is not in your favourites list","isfavourite": False}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except ServiceMap.DoesNotExist:
+                responsedata={"successstatus":"error","message":"the service does not exists"}
+                print(responsedata)
+                return Response(responsedata)
+
+            except Exception as e:
+                responsedata={"successstatus":"error","message":"unknown error occured while Trying To get  isfavourite"}
+                print("error occured")
+                print("Error : ",e)
+                print(responsedata)
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(True, exc_type, fname, exc_tb.tb_lineno)
+                return  Response(responsedata)
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ServiceMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error",
+                            "message": "the service you are requesting is not available any more"}
+            print(responsedata)
+            return Response(responsedata)
+
+        except Exception as e:
+
+            print("error occured in outer except RequestService ")
+            print("error : ", e)
+            responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+class GetItemByCategory(APIView):
+    def get(self,request,catid):
+        if (not catid) :
+            print("not all data in GetItemByCategory")
+            responsedata = {"successstatus": "error", "message": "please procvide all the details necessary"}
+            print("in get providers list : ", responsedata)
+            return Response(responsedata)
+
+        try:
+            itemsdata=[]
+            im=ItemMap.objects.filter(product_category_id=int(catid))
+            for i in range(0,len(im)):
+                tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'product_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
+                itemsdata.append(tmpdata)
+            responsedata={"successstatus":"ok","message":"{0} Items Found".format(len(im)),"itemdata":itemsdata}
+            print(responsedata)
+            return  Response(responsedata)
+
+        except ItemMap.DoesNotExist:
+            responsedata={"successstatus":"error","message":"no items available for this category"}
+            print(responsedata)
+            return Response(responsedata)
+        except Exception as e:
+            responsedata={"successstatus":"error","message":"unknown error occured getting item by category"}
+            print(responsedata)
+            return  Response(responsedata)
+
+
+class GetItemByProvider(APIView):
+    def get(self,request,providerid):
+        if (not providerid) :
+            print("not all data in GetItemByCategory")
+            responsedata = {"successstatus": "error", "message": "please procvide all the details necessary"}
+            print("in get providers list : ", responsedata)
+            return Response(responsedata)
+
+        try:
+            itemsdata=[]
+            im=ItemMap.objects.filter(product_category_id=int(providerid))
+            for i in range(0,len(im)):
+                tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'product_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
+                itemsdata.append(tmpdata)
+            responsedata={"successstatus":"ok","message":"{0} Items Found".format(len(im)),"itemdata":itemsdata}
+            print(responsedata)
+            return  Response(responsedata)
+
+        except ItemMap.DoesNotExist:
+            responsedata={"successstatus":"error","message":"no items available for this category"}
+            print(responsedata)
+            return Response(responsedata)
+        except Exception as e:
+            responsedata={"successstatus":"error","message":"unknown error occured getting item by category"}
+            print(responsedata)
+            return  Response(responsedata)
+
+import json
+import urllib
+from urllib.request import urlopen
+
+class GetPincode(APIView):
+    def get(self,request,lan,lat):
+        responsedata={}
+        try:
+            if((not lan) or  (not lat)):
+                responsedata={"successstatus":"error","message":"please provide all the details necessary"}
+                print(responsedata)
+                return  Response(responsedata)
+            url="http://api.geonames.org/findNearbyPostalCodesJSON?lat={0}&lng={1}&username=vaibhawm"
+            furl=url.format(float(lan),float(lat))
+            r=urlopen(furl)
+            d=r.read().decode()
+            print(type(d))
+            d=json.loads(d)
+            #print(d)
+            pincode=d["postalCodes"][0]["postalCode"]
+            responsedata={"successstatus":"ok","pincode":pincode}
+            print(responsedata)
+            return Response(responsedata)
+        except Exception as e:
+            responsedata = {"successstatus": "error", "message": "unknown error occured getting pincode"}
+            print(responsedata)
+            print(e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

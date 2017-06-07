@@ -51,10 +51,15 @@ class UserDetail(models.Model):
 
     full_name = models.CharField(max_length=500)
 
-    email = models.EmailField(unique=True)
-    mobile=models.IntegerField(unique=True)
+    email = models.EmailField(blank=True,null=True)
+    mobile=models.CharField(unique=True,max_length=20)
     pincode=models.PositiveIntegerField();
-    address=models.TextField();
+
+    country = models.TextField();
+    city = models.TextField();
+    district = models.TextField();
+    building = models.TextField();
+    street = models.TextField();
     key = models.CharField(max_length=40)
     password = models.CharField(max_length=200)
     user_type = models.IntegerField(default=0)
@@ -89,7 +94,8 @@ class UserDetail(models.Model):
 # UserSession Table
 class UserSession(models.Model):
     full_name = models.CharField(max_length=500)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(blank=True,null=True)
+    mobile = models.CharField(unique=True,max_length=20)
     User_Type=models.IntegerField()
     UserSession_starttime = models.DateTimeField(auto_now_add=True)
     UserSession_lastmodifiedtime = models.DateTimeField(auto_now=True)
@@ -115,7 +121,8 @@ class UserSession(models.Model):
 class UserVerificationSession(models.Model):
     full_name = models.CharField(max_length=500)
     session_starttime = models.DateTimeField(auto_now_add=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(blank=True,null=True)
+    mobile = models.CharField(unique=True,max_length=20)
     User_Type = models.IntegerField()
     UserDetail_ref = models.OneToOneField(UserDetail, on_delete=models.CASCADE, primary_key=True)
     UserDetail_id = models.IntegerField(unique=True)
@@ -162,6 +169,31 @@ class ServiceCategory(models.Model):
         return self.service_name
 
 
+def product_image_upload_location(instance,filename):
+    return "%s/product_image/%s"%(instance.product_name,filename)
+
+
+
+class ProductCategory(models.Model):
+
+    product_name = models.CharField(max_length=500)
+    product_detail = models.TextField()
+
+
+    product_image=models.ImageField(upload_to=product_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field",
+                                      width_field="width_field")
+
+    height_field = models.IntegerField(default=0)
+    width_field = models.IntegerField(default=0)
+
+
+    def __str__(self):
+        return self.product_name
+
+
 
 class ServiceSubCategory(models.Model):
 
@@ -186,12 +218,17 @@ class ServiceMap(models.Model):
 
     serviceprovider_id=models.IntegerField()
     service_name=models.CharField(max_length=500)
+    license_no = models.CharField(max_length=40)
+    under_gov = models.CharField(max_length=40)
     service_details=models.TextField()
-    serviceprovider_email=models.EmailField()
+    serviceprovider_email=models.EmailField(blank=True,null=True)
+    mobile = models.CharField(max_length=20)
     service_category_id=models.IntegerField()
     service_ref=models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
     #subservice_id=models.IntegerField()
     areapincode=models.PositiveIntegerField()
+    register_time=models.DateTimeField(auto_now_add=True,blank=True,null=True)
+
 
 
     def __str__(self):
@@ -206,9 +243,10 @@ class ItemMap(models.Model):
 
 
     serviceprovider_id = models.IntegerField()
-    serviceprovider_email = models.EmailField()
-    service_category_id = models.IntegerField()
-    service_ref = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
+    serviceprovider_email = models.EmailField(blank=True,null=True)
+    mobile = models.CharField(max_length=20)
+    product_category_id = models.IntegerField()
+    product_ref = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
     item_name=models.CharField(max_length=500)
     item_details=models.TextField()
     item_features=models.TextField()
@@ -225,32 +263,121 @@ class ItemMap(models.Model):
     item_MRP=models.FloatField()
     item_SLP=models.FloatField()
 
-
-
+    def __str__(self):
+        return self.item_name
 
 
 class ServiceRequest(models.Model):
 
-    serviceprovider_full_name = models.CharField(max_length=500)
     serviceprovider_id = models.IntegerField()
-    serviceprovider_mobile = models.IntegerField()
-    serviceprovider_email = models.EmailField()
-    serviceprovider_pincode = models.PositiveIntegerField();
-    serviceprovider_address = models.TextField();
+    serviceprovider_ref=models.ForeignKey(UserDetail,related_name='providerdetail', on_delete=models.CASCADE)
+
+
+
+    user_id = models.IntegerField()
+    user_ref = models.ForeignKey(UserDetail,related_name='userdetail', on_delete=models.CASCADE)
+
     service_category_id = models.IntegerField()
-    service_ref = models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
 
-    user_full_name = models.CharField(max_length=500)
-    user_email = models.EmailField()
-    user_mobile = models.IntegerField()
-    user_pincode = models.PositiveIntegerField();
-    user_address = models.TextField();
-
-
-    service_name = models.CharField(max_length=500)
-    service_details = models.TextField()
+    service_map_id = models.IntegerField()
+    service_map_ref = models.ForeignKey(ServiceMap, on_delete=models.CASCADE)
 
 
 
 
     areapincode = models.PositiveIntegerField()
+    service_request_address=models.TextField(null=True,blank=True)
+
+    request_time = models.DateTimeField(auto_now_add=True)
+    request_detail=models.TextField(blank=True,null=True)
+
+    service_status=models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.service_map_ref.service_name
+
+
+
+
+class OrderHistory(models.Model):
+
+    serviceprovider_id = models.IntegerField()
+    serviceprovider_ref=models.ForeignKey(UserDetail,related_name='ohproviderdetail', on_delete=models.CASCADE)
+
+
+
+    user_id = models.IntegerField()
+    user_ref = models.ForeignKey(UserDetail,related_name='ohuserdetail', on_delete=models.CASCADE)
+
+    #service_category_id = models.IntegerField()
+
+    service_map_id = models.IntegerField()
+    service_map_ref = models.ForeignKey(ServiceMap,related_name='ohservicemap' ,on_delete=models.CASCADE)
+
+    service_request_id=models.IntegerField()
+    service_request_ref=models.ForeignKey(ServiceRequest,related_name='ohservicerequest',on_delete=models.CASCADE)
+
+
+    booked_time = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return self.service_map_ref.service_name
+
+
+
+class ServiceNotification(models.Model):
+
+    serviceprovider_id = models.IntegerField()
+    serviceprovider_ref = models.ForeignKey(UserDetail, related_name='notiproviderdetail', on_delete=models.CASCADE)
+    servicerequest_id = models.IntegerField()
+    servicerequest_ref=models.ForeignKey(ServiceRequest, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(auto_now_add=True)
+
+    read=models.BooleanField(default=False)
+    notification=models.TextField(blank=True,null=True)
+
+    def getMessage(self):
+        message = self.servicerequest_ref.user_ref.full_name + " has requested for " + self.serviceprovider_ref.full_name + "'s service : " + self.servicerequest_ref.service_map_ref.service_name
+        return message
+
+    def __str__(self):
+        return  self.getMessage()
+
+#
+# class ServiceRequestChat(models.Model):
+#
+#     customer_id=models.IntegerField()
+#     sender_id = models.IntegerField()
+#     sender_ref = models.ForeignKey(UserDetail, related_name='senderdetail', on_delete=models.CASCADE)
+#
+#     receiver_id = models.IntegerField()
+#     receiver_ref = models.ForeignKey(UserDetail, related_name='receiver', on_delete=models.CASCADE)
+#
+#     #service_category_id = models.IntegerField()
+#
+#     service_map_id = models.IntegerField(null=True, blank=True)
+#     service_map_ref = models.ForeignKey(ServiceMap, on_delete=models.CASCADE, null=True, blank=True)
+#
+#     request_id=models.IntegerField()
+#     request_ref=models.ForeignKey(ServiceRequest,related_name="requestmessage",on_delete=models.CASCADE)
+#
+#     sending_time = models.DateTimeField(auto_now_add=True)
+#     message_detail = models.TextField(blank=True, null=True)
+#     read=models.BooleanField(default=False)
+#
+#
+#
+#     def __str__(self):
+#         return self.sender_ref.name+" has sent a message to : "+self.receiver_ref.name+" on : "+self.sending_time
+#
+#
+
+class FavouriteService(models.Model):
+    user_id=models.IntegerField()
+    servicemap_id=models.IntegerField()
+    servicemap_ref=models.ForeignKey(ServiceMap,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.serviceprovider_ref.full_name
+
