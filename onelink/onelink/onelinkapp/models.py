@@ -249,16 +249,18 @@ class ItemMap(models.Model):
     product_ref = models.ForeignKey(ProductCategory, on_delete=models.CASCADE)
     item_name=models.CharField(max_length=500)
     item_details=models.TextField()
-    item_features=models.TextField()
+    item_features=models.TextField(blank=True,null=True)
     #areapincode = models.PositiveIntegerField()
-    item_image = models.ImageField(upload_to=item_image_upload_location,
-                                      null=True,
-                                      blank=True,
-                                      height_field="height_field",
-                                      width_field="width_field")
+    # item_image = models.ImageField(upload_to=item_image_upload_location,
+    #                                   null=True,
+    #                                   blank=True,
+    #                                   height_field="height_field",
+    #                                   width_field="width_field")
+    #
+    # height_field = models.IntegerField(default=0)
+    # width_field = models.IntegerField(default=0)
 
-    height_field = models.IntegerField(default=0)
-    width_field = models.IntegerField(default=0)
+    item_image = models.TextField(null=True,blank=True)
 
     item_MRP=models.FloatField()
     item_SLP=models.FloatField()

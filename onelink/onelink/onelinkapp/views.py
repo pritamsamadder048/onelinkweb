@@ -1383,6 +1383,196 @@ class GetMySingleService(APIView):
             return Response(responsedata)
 
 
+
+
+
+class GetMyRequests(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                if(ud.user_type==0):
+                                    sr = ServiceRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
+                                else:
+                                    sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+
+                                if (sr):
+                                    ssr = ServiceMapSerializer(sr, many=True)
+
+                                    # print("sm : ",sm)
+                                    print(ssr.data)
+                                    return Response(ssr.data)
+
+                                else:
+                                    responsedata = {"successstatus": "error","message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+
+
+                            except ServiceMap.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            return Response(responsedata)
+
+class GetMySingleRequest(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key']) or (not getservice_data['request_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                if (ud.user_type == 0):
+                                    sr = ServiceRequest.objects.get(serviceprovider_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                else:
+                                    sr = ServiceRequest.objects.get(user_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+
+                                if (sr):
+                                    ssr = ServiceRequestSerializer(sr)
+                                    tdata=ssr.data
+                                    # try:
+                                    #     rud = UserDetail.objects.get(id=sr.user_id)
+                                    # except Exception as e:
+                                    #     responsedata={"successstatus":"error","messgae":"could not get requester's details"}
+                                    #     print("response data : ",responsedata)
+                                    #     print("Error occured : ",e)
+                                    #     return Response(responsedata)
+                                    tdata["user_name"]=sr.user_ref.full_name
+                                    tdata["mobile"]=sr.user_ref.mobile
+                                    tdata["service_name"]=sr.service_map_ref.service_name
+
+                                    # print("sm : ",sm)
+                                    print("final data : ",tdata)
+
+                                    return Response(tdata)
+
+                                else:
+                                    responsedata = {"successstatus": "error", "message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+
+
+                            except ServiceMap.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
 ############################################################################################################################
 ###########################################  Item Section ##################################################################
 
@@ -1400,6 +1590,8 @@ class AddItem(APIView):
 
             for key in request.POST:
                 additem_data[key] = request.POST[key].strip()
+
+            print("add item data : ",additem_data)
 
 
             if((not additem_data['serviceprovider_id']) or (not additem_data['user_session_key'])  or (not additem_data['item_name']) or (not additem_data['item_details']) or (not additem_data['item_category_id'])      or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
@@ -1437,21 +1629,22 @@ class AddItem(APIView):
 
 
                             try:
-                                sc = ProductCategory.objects.get(id=int(additem_data['product_category_id']))
+                                sc = ProductCategory.objects.get(id=int(additem_data['item_category_id']))
 
                                 im = ItemMap()
                                 im.serviceprovider_id=additem_data['serviceprovider_id']
-                                im.service_name=additem_data['item_name']
-                                im.service_details=additem_data['item_details']
+                                im.item_name=additem_data['item_name']
+                                im.item_details=additem_data['item_details']
                                 im.serviceprovider_email=ud.email
-                                im.product_category_id=int(additem_data['product_category_id'])
+                                im.product_category_id=int(additem_data['item_category_id'])
                                 im.product_ref=sc
-                                if  request.FILES.get('item_image',None) is not None:
+                                if  additem_data.get('item_image',None) is not None:
                                     im.item_image=additem_data['item_image']
                                 #im.areapincode=additem_data['areapincode']
                                 im.item_features=additem_data['item_features']
                                 im.item_MRP=additem_data['item_MRP']
                                 im.item_SLP=additem_data['item_SLP']
+                                im.mobile=ud.mobile
 
 
                                 im.save()
@@ -1502,10 +1695,14 @@ class AddItem(APIView):
                 return Response(responsedata)
 
 
-        except:
+        except Exception as e:
 
             responsedata = {"successstatus": "error", "message": "Unknown Error"}
             print("in outer except : AddItem : ",responsedata)
+            print("Error : ",e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
             return Response(responsedata)
 
 
@@ -1522,12 +1719,12 @@ class UpdateItem(APIView):
             for key in request.POST:
                 updateitem_data[key] = request.POST[key].strip()
 
-            if ((not updateitem_data['itemmap_id'])or (not updateitem_data['user_session_key'])  or (not updateitem_data['serviceprovider_id']) or (not updateitem_data['item_name'])  or (not updateitem_data['item_details'])  or (not request.FILES['item_image']) or (not updateitem_data['item_MRP']) or (not updateitem_data['item_SLP']) or (not updateitem_data['item_features'])):
+            if ((not updateitem_data['itemmap_id'])or (not updateitem_data['user_session_key'])  or (not updateitem_data['serviceprovider_id']) or (not updateitem_data['item_name'])  or (not updateitem_data['item_details'])   or (not updateitem_data['item_MRP']) or (not updateitem_data['item_SLP']) or (not updateitem_data['item_features'])):
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
 
-            updateitem_data['item_image']=request.FILES['item_image']
+
             print("Register service data : ", updateitem_data)
 
             if (request.session.has_key('user_session_key')):
@@ -1537,10 +1734,9 @@ class UpdateItem(APIView):
                 print("sess key ", sesskey)
 
 
-            if request.FILES.get("item_image",None) is not None:
-                updateitem_data['item_image']=request.FILES['item_image']
-            else:
-                updateitem_data["item_image"]=None
+            if updateitem_data.get("item_image",None) is None:
+                updateitem_data["item_image"] = None
+
 
             try:
                 us = UserSession.objects.get(UserSession_key=sesskey)
@@ -1567,7 +1763,8 @@ class UpdateItem(APIView):
                                 im.service_name = updateitem_data['item_name']
                                 im.service_details = updateitem_data['item_details']
                                 im.serviceprovider_email = ud.email
-                                im.item_image = updateitem_data['item_image']
+                                if(updateitem_data["item_image"]):
+                                    im.item_image = updateitem_data['item_image']
                                 #im.areapincode = updateitem_data['areapincode']
                                 im.item_features = updateitem_data['item_features']
                                 im.item_MRP = updateitem_data['item_MRP']
@@ -1624,10 +1821,14 @@ class UpdateItem(APIView):
                 return Response(responsedata)
 
 
-        except:
+        except Exception as e:
 
             responsedata = {"successstatus": "error", "message": "Unknown Error"}
             print("in outer except : ", responsedata)
+            print("Error : ",e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
             return Response(responsedata)
 
 class DeleteItem(APIView):
@@ -1753,7 +1954,10 @@ class GetMyItems(APIView):
                         ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud):
                             try:
-                                im = ItemMap.objects.filter(serviceprovider_id=int(getitem_data['id']))
+                                # print("service provider's id is : ",ud.id)
+                                im = ItemMap.objects.filter(serviceprovider_id=ud.id)
+
+                                # print("items : ",im)
 
                                 if (im):
                                     sim = ItemMapSerializer(im, many=True)
@@ -1958,8 +2162,8 @@ class ConfirmRequest(APIView):
                                 cr.serviceprovider_ref=sr.serviceprovider_ref
                                 cr.service_map_id=sr.service_map_id
                                 cr.service_map_ref=sr.service_map_ref
-                                cr.service_request_id=sr.service_request_id
-                                cr.service_request_ref=sr.service_request_ref
+                                cr.service_request_id=sr.id
+                                cr.service_request_ref=sr
 
                                 cr.save()
 
@@ -1973,7 +2177,7 @@ class ConfirmRequest(APIView):
                                 return  Response(responsedata)
 
                     except Exception as e:
-                        responsedata={"successstatus":"ok","message":"Unknown error occured"}
+                        responsedata={"successstatus":"error","message":"Unknown error occured"}
                         print(responsedata)
                         print("Error occured : ",e)
                         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -2042,7 +2246,10 @@ class GetMyHistory(APIView):
                             try:
 
 
-                                cr = OrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+                                if(ud.user_type==0):
+                                    cr = OrderHistory.objects.filter(serviceprovider_id=ud.id).order_by("-booked_time")
+                                else:
+                                    cr = OrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
 
                                 scr=OrderHistorySerializer(cr,many=True)
 
@@ -2056,7 +2263,7 @@ class GetMyHistory(APIView):
                                 return Response(responsedata)
 
                     except Exception as e:
-                        responsedata = {"successstatus": "ok", "message": "Unknown error occured"}
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
                         print(responsedata)
                         print("Error occured : ", e)
                         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -2947,10 +3154,15 @@ class GetItemByCategory(APIView):
         try:
             itemsdata=[]
             im=ItemMap.objects.filter(product_category_id=int(catid))
-            for i in range(0,len(im)):
-                tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'product_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
-                itemsdata.append(tmpdata)
-            responsedata={"successstatus":"ok","message":"{0} Items Found".format(len(im)),"itemdata":itemsdata}
+            # for i in range(0,len(im)):
+            #     tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'item_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
+            #     itemsdata.append(tmpdata)
+            sim=ItemMapSerializer(im,many=True)
+            if(len(sim.data)<=0):
+
+                responsedata={"successstatus":"error","message":"{0} Items Found".format(len(im)),"itemdata":sim.data}
+            else:
+                responsedata = {"successstatus": "ok", "message": "{0} Items Found".format(len(im)),"itemdata": sim.data}
             print(responsedata)
             return  Response(responsedata)
 
@@ -2960,8 +3172,52 @@ class GetItemByCategory(APIView):
             return Response(responsedata)
         except Exception as e:
             responsedata={"successstatus":"error","message":"unknown error occured getting item by category"}
+            print("Error : ", e)
+            print(responsedata)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return  Response(responsedata)
+
+
+
+
+
+
+class GetItemById(APIView):
+    def get(self,request,itemid):
+        if (not itemid) :
+            print("not all data in GetItemByCategory")
+            responsedata = {"successstatus": "error", "message": "please procvide all the details necessary"}
+            print("in get providers list : ", responsedata)
+            return Response(responsedata)
+
+        try:
+            itemsdata=[]
+            im=ItemMap.objects.get(id=int(itemid))
+            # for i in range(0,len(im)):
+            #     tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'item_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
+            #     itemsdata.append(tmpdata)
+            sim=ItemMapSerializer(im)
+            responsedata = {"successstatus": "ok","itemdata": sim.data}
             print(responsedata)
             return  Response(responsedata)
+
+        except ItemMap.DoesNotExist:
+            responsedata={"successstatus":"error","message":"no items available for this id"}
+            print(responsedata)
+            return Response(responsedata)
+        except Exception as e:
+            responsedata={"successstatus":"error","message":"unknown error occured getting item by id"}
+            print("Error : ", e)
+            print(responsedata)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return  Response(responsedata)
+
+
+
 
 
 class GetItemByProvider(APIView):
@@ -2976,7 +3232,7 @@ class GetItemByProvider(APIView):
             itemsdata=[]
             im=ItemMap.objects.filter(product_category_id=int(providerid))
             for i in range(0,len(im)):
-                tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'product_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
+                tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'item_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
                 itemsdata.append(tmpdata)
             responsedata={"successstatus":"ok","message":"{0} Items Found".format(len(im)),"itemdata":itemsdata}
             print(responsedata)
@@ -2987,7 +3243,7 @@ class GetItemByProvider(APIView):
             print(responsedata)
             return Response(responsedata)
         except Exception as e:
-            responsedata={"successstatus":"error","message":"unknown error occured getting item by category"}
+            responsedata={"successstatus":"error","message":"unknown error occured getting item by provider"}
             print(responsedata)
             return  Response(responsedata)
 

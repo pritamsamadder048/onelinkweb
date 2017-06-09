@@ -70,24 +70,24 @@ class ServiceMapSerializer(serializers.ModelSerializer):
         fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode')
 
 
-class ItemMapSerializer(serializers.Serializer):
+class ItemMapSerializer(serializers.ModelSerializer):
 
 
     class Meta:
         model=ItemMap
-        fields=('id','serviceprovider_id','serviceprovider_email','product_category_id','item_name','item_details','item_features','item_MRP','item_SLP','iteme_image')
+        fields="__all__"#('id','serviceprovider_id','serviceprovider_email','product_category_id','item_name','item_details','item_features','item_MRP','item_SLP','iteme_image')
 
 
 
 
 
 
-class ServiceRequestSerializer(serializers.Serializer):
+class ServiceRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
 
         model=ServiceRequest
-        fields=("id","serviceprovider_id","user_id","service_category_id","service_map_id","areapincode","service_request_address")
+        fields="__all__"#("id","serviceprovider_id","user_id","service_category_id","service_map_id","areapincode","service_request_address")
 
 
 
@@ -113,14 +113,14 @@ class ProviderNotificationSerializer(serializers.ModelSerializer):
 
 
 from .models import FavouriteService
-class FavouriteServiceSerializer(serializers.Serializer):
+class FavouriteServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model=FavouriteService
         fields="__all__"
 
 
 from .models import OrderHistory
-class OrderHistorySerializer(serializers.Serializer):
+class OrderHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model=OrderHistory
-        fileds="__all__"
+        fields="__all__"

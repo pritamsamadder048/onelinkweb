@@ -11,6 +11,7 @@ from .models import ServiceRequest
 from .models import ServiceNotification
 from .models import FavouriteService
 from .models import ProductCategory
+from .models import OrderHistory
 
 
 from .models import Stock
@@ -28,3 +29,4 @@ admin.site.register(ServiceRequest)
 admin.site.register(ServiceNotification)
 admin.site.register(FavouriteService)
 admin.site.register(ProductCategory)
+admin.site.register(OrderHistory)

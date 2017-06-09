@@ -47,11 +47,17 @@ urlpatterns = [
     url(r'^updateservice/$', views.UpdateService.as_view(),name="updateservice"),
     url(r'^deleteservice/$', views.DeleteService.as_view(),name="deleteservice"),
 
+
+    url(r'^getmyrequests/$', views.GetMyRequests.as_view(),name="getmyrequests"),
+    url(r'^getmysinglerequest/$', views.GetMySingleRequest.as_view(),name="getmysinglerequest"),
+
+
     url(r'^additem/$', views.AddItem.as_view(),name="additem"),
     url(r'^updateitem/$', views.UpdateItem.as_view(),name="updateitem"),
     url(r'^deleteitem/$', views.DeleteItem.as_view(),name="deleteitem"),
     url(r'^getmyitems/$', views.GetMyItems.as_view(),name="getmyitems"),
     url(r'^getitembycategory/(?P<catid>[0-9]+)/$', views.GetItemByCategory.as_view(),name="getitembycategory"),
+    url(r'^getitembyid/(?P<itemid>[0-9]+)/$', views.GetItemById.as_view(),name="getitembyid"),
 
 
 
