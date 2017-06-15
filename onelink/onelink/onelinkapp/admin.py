@@ -9,9 +9,12 @@ from .models import ServiceMap
 from .models import ItemMap
 from .models import ServiceRequest
 from .models import ServiceNotification
+from .models import ItemNotification
 from .models import FavouriteService
 from .models import ProductCategory
 from .models import OrderHistory
+from .models import ItemOrderHistory
+from .models import ItemRequest
 
 
 from .models import Stock
@@ -26,7 +29,10 @@ admin.site.register(ServiceSubCategory)
 admin.site.register(ServiceMap)
 admin.site.register(ItemMap)
 admin.site.register(ServiceRequest)
+admin.site.register(ItemRequest)
 admin.site.register(ServiceNotification)
+admin.site.register(ItemNotification)
 admin.site.register(FavouriteService)
 admin.site.register(ProductCategory)
 admin.site.register(OrderHistory)
+admin.site.register(ItemOrderHistory)

@@ -82,6 +82,7 @@ class ItemMapSerializer(serializers.ModelSerializer):
 
 
 
+
 class ServiceRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -123,4 +124,68 @@ from .models import OrderHistory
 class OrderHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model=OrderHistory
+        fields="__all__"
+
+
+
+
+
+from .models import ItemRequest
+class ItemRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+
+        model=ItemRequest
+        fields="__all__"#("id","serviceprovider_id","user_id","service_category_id","service_map_id","areapincode","service_request_address")
+
+
+
+
+
+
+
+
+
+
+from  .models import ItemNotification
+class ItemNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ItemNotification
+        fields="__all__"#("id","serviceprovider_id","servicerequest_id","request_time","read","notification")
+
+
+
+#
+# from .models import ServiceRequestChat
+#
+# class ServiceRequestChatSerializer(serializers.Serializer):
+#     class Meta:
+#         model=ServiceRequestChat
+#         fields="__all__"
+
+
+
+from .models import FavouriteItem
+class FavouriteItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=FavouriteItem
+        fields="__all__"
+
+
+from .models import ItemOrderHistory
+class ItemOrderHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model=ItemOrderHistory
+        fields="__all__"
+
+
+
+
+
+
+
+from .models import RequestMessage
+class RequestMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=RequestMessage
         fields="__all__"

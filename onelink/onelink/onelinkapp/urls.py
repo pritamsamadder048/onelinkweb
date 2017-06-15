@@ -50,6 +50,8 @@ urlpatterns = [
 
     url(r'^getmyrequests/$', views.GetMyRequests.as_view(),name="getmyrequests"),
     url(r'^getmysinglerequest/$', views.GetMySingleRequest.as_view(),name="getmysinglerequest"),
+    url(r'^getmyitemrequests/$', views.GetMyItemRequests.as_view(),name="getmyitemrequests"),
+    url(r'^getmysingleitemrequest/$', views.GetMySingleItemRequest.as_view(),name="getmysingleitemrequest"),
 
 
     url(r'^additem/$', views.AddItem.as_view(),name="additem"),
@@ -65,6 +67,7 @@ urlpatterns = [
     url(r'^getsingleprovider/(?P<serviceid>[0-9]+)/$', views.GetSingleProvider.as_view(),name="getsingleprovider"),
 
     url(r'^requestservice/$', views.RequestService.as_view(),name="requestservice"),
+
     url(r'^requestquickservice/$', views.RequestQuickService.as_view(),name="requestquickservice"),
 
     url(r'^getmynotifications/$', views.GetMyNotifications.as_view(),name="getmynotifications"),
@@ -78,7 +81,15 @@ urlpatterns = [
     url(r'^getpincode/(?P<lan>\d+\.\d+)/(?P<lat>\d+\.\d+)/$', views.GetPincode.as_view(),name="getpincode"),
 
     url(r'^confirmrequest/$', views.ConfirmRequest.as_view(),name="confirmrequest"),
+    url(r'^confirmitemrequest/$', views.ConfirmItemRequest.as_view(),name="confirmitemrequest"),
     url(r'^getmyhistory/$', views.GetMyHistory.as_view(),name="getmyhistory"),
+
+
+
+    url(r'^requestproduct/$', views.RequestProduct.as_view(),name="requestproduct"),
+    url(r'^sendmessage/$', views.SendMessage.as_view(),name="sendmessage"),
+    url(r'^getmessages/$', views.GetMessages.as_view(),name="getmessages"),
+
 
 
 

@@ -53,7 +53,7 @@ class UserDetail(models.Model):
 
     email = models.EmailField(blank=True,null=True)
     mobile=models.CharField(unique=True,max_length=20)
-    pincode=models.PositiveIntegerField();
+    pincode=models.CharField(max_length=10)
 
     country = models.TextField();
     city = models.TextField();
@@ -226,7 +226,7 @@ class ServiceMap(models.Model):
     service_category_id=models.IntegerField()
     service_ref=models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
     #subservice_id=models.IntegerField()
-    areapincode=models.PositiveIntegerField()
+    areapincode=models.CharField(max_length=10)
     register_time=models.DateTimeField(auto_now_add=True,blank=True,null=True)
 
 
@@ -287,10 +287,11 @@ class ServiceRequest(models.Model):
 
 
 
-    areapincode = models.PositiveIntegerField()
+    areapincode = models.CharField(max_length=10)
     service_request_address=models.TextField(null=True,blank=True)
 
     request_time = models.DateTimeField(auto_now_add=True)
+    service_time=models.CharField(null=True,blank=True,max_length=200)
     request_detail=models.TextField(blank=True,null=True)
 
     service_status=models.IntegerField(default=0)
@@ -318,6 +319,7 @@ class OrderHistory(models.Model):
 
     service_request_id=models.IntegerField()
     service_request_ref=models.ForeignKey(ServiceRequest,related_name='ohservicerequest',on_delete=models.CASCADE)
+    confirmation_id=models.CharField(null=True,blank=True,max_length=500)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)
@@ -335,51 +337,140 @@ class ServiceNotification(models.Model):
     servicerequest_id = models.IntegerField()
     servicerequest_ref=models.ForeignKey(ServiceRequest, on_delete=models.CASCADE)
     request_time = models.DateTimeField(auto_now_add=True)
+    request_type=models.CharField(blank=True,null=True,default="SERVICE",max_length=10)
 
     read=models.BooleanField(default=False)
     notification=models.TextField(blank=True,null=True)
 
     def getMessage(self):
-        message = self.servicerequest_ref.user_ref.full_name + " has requested for " + self.serviceprovider_ref.full_name + "'s service : " + self.servicerequest_ref.service_map_ref.service_name
+        message = self.servicerequest_ref.user_ref.full_name + " has requested for your service : " + self.servicerequest_ref.service_map_ref.service_name
         return message
 
     def __str__(self):
         return  self.getMessage()
-
-#
-# class ServiceRequestChat(models.Model):
-#
-#     customer_id=models.IntegerField()
-#     sender_id = models.IntegerField()
-#     sender_ref = models.ForeignKey(UserDetail, related_name='senderdetail', on_delete=models.CASCADE)
-#
-#     receiver_id = models.IntegerField()
-#     receiver_ref = models.ForeignKey(UserDetail, related_name='receiver', on_delete=models.CASCADE)
-#
-#     #service_category_id = models.IntegerField()
-#
-#     service_map_id = models.IntegerField(null=True, blank=True)
-#     service_map_ref = models.ForeignKey(ServiceMap, on_delete=models.CASCADE, null=True, blank=True)
-#
-#     request_id=models.IntegerField()
-#     request_ref=models.ForeignKey(ServiceRequest,related_name="requestmessage",on_delete=models.CASCADE)
-#
-#     sending_time = models.DateTimeField(auto_now_add=True)
-#     message_detail = models.TextField(blank=True, null=True)
-#     read=models.BooleanField(default=False)
-#
-#
-#
-#     def __str__(self):
-#         return self.sender_ref.name+" has sent a message to : "+self.receiver_ref.name+" on : "+self.sending_time
-#
-#
-
 class FavouriteService(models.Model):
     user_id=models.IntegerField()
     servicemap_id=models.IntegerField()
     servicemap_ref=models.ForeignKey(ServiceMap,on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.serviceprovider_ref.full_name
+        return self.servicemap_ref.service_name
+
+
+
+
+
+
+
+
+
+
+
+class ItemRequest(models.Model):
+
+    serviceprovider_id = models.IntegerField()
+    serviceprovider_ref=models.ForeignKey(UserDetail,related_name='itemproviderdetail', on_delete=models.CASCADE)
+
+
+
+    user_id = models.IntegerField()
+    user_ref = models.ForeignKey(UserDetail,related_name='itemuserdetail', on_delete=models.CASCADE)
+
+    item_category_id = models.IntegerField()
+
+    item_map_id = models.IntegerField()
+    item_map_ref = models.ForeignKey(ItemMap, on_delete=models.CASCADE)
+    item_quantity=models.IntegerField(default=1)
+
+
+
+    areapincode = models.CharField(null=True,blank=True,max_length=10)
+    item_request_address=models.TextField(null=True,blank=True)
+
+    request_time = models.DateTimeField(auto_now_add=True)
+    #item_delivery_time=models.CharField(null=True,blank=True)
+    request_detail=models.TextField(blank=True,null=True)
+
+    item_status=models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.item_map_ref.item_name
+
+
+
+
+
+class ItemOrderHistory(models.Model):
+
+    serviceprovider_id = models.IntegerField()
+    serviceprovider_ref=models.ForeignKey(UserDetail,related_name='iohproviderdetail', on_delete=models.CASCADE)
+
+
+
+    user_id = models.IntegerField()
+    user_ref = models.ForeignKey(UserDetail,related_name='iohuserdetail', on_delete=models.CASCADE)
+
+    #service_category_id = models.IntegerField()
+
+    item_map_id = models.IntegerField()
+    item_map_ref = models.ForeignKey(ItemMap,related_name='iohservicemap' ,on_delete=models.CASCADE)
+
+    item_request_id=models.IntegerField()
+    item_request_ref=models.ForeignKey(ItemRequest,related_name='iohsitemrequest',on_delete=models.CASCADE)
+    confirmation_id = models.CharField(null=True, blank=True, max_length=500)
+
+
+    booked_time = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return self.item_map_ref.item_name
+
+
+class ItemNotification(models.Model):
+
+    serviceprovider_id = models.IntegerField()
+    serviceprovider_ref = models.ForeignKey(UserDetail, related_name='inotiproviderdetail', on_delete=models.CASCADE)
+    itemrequest_id = models.IntegerField()
+    itemrequest_ref=models.ForeignKey(ItemRequest, on_delete=models.CASCADE)
+    request_time = models.DateTimeField(auto_now_add=True)
+    request_type = models.CharField(blank=True, null=True, default="PRODUCT",max_length=10)
+
+    read=models.BooleanField(default=False)
+    notification=models.TextField(blank=True,null=True)
+
+    def getMessage(self):
+        message = self.itemrequest_ref.user_ref.full_name + " has requested for your product : " + self.itemrequest_ref.item_map_ref.item_name
+        return message
+
+    def __str__(self):
+        return  self.getMessage()
+
+class FavouriteItem(models.Model):
+    user_id=models.IntegerField()
+    itemmap_id=models.IntegerField()
+    itemmap_ref=models.ForeignKey(ItemMap,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.itemmap_ref.item_name
+
+
+class RequestMessage(models.Model):
+    request_id=models.IntegerField()
+    servicerequest_ref= models.ForeignKey(ServiceRequest, related_name='msgsservicerequest', on_delete=models.CASCADE,null=True,blank=True)
+    itemrequest_ref= models.ForeignKey(ItemRequest, related_name='msgsservicerequest', on_delete=models.CASCADE,null=True,blank=True)
+    sender_id=models.IntegerField()
+    sender_ref= models.ForeignKey(UserDetail, related_name='msgsender', on_delete=models.CASCADE)
+    receiver_id=models.IntegerField()
+    receiver_ref= models.ForeignKey(UserDetail, related_name='msgreceiver', on_delete=models.CASCADE)
+    sending_time=models.DateTimeField(auto_now_add=True)
+    message_text=models.TextField()
+    request_type=models.CharField(max_length=10)
+    read=models.BooleanField(default=False)
+
+
+
+
+
+
 
