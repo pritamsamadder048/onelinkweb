@@ -468,6 +468,9 @@ class RequestMessage(models.Model):
     request_type=models.CharField(max_length=10)
     read=models.BooleanField(default=False)
 
+    def __str__(self):
+        return "Sender : "+self.sender_ref.full_name+"   Receiver : "+self.receiver_ref.full_name
+
 
 
 

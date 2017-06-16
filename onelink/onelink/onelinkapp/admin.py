@@ -15,6 +15,8 @@ from .models import ProductCategory
 from .models import OrderHistory
 from .models import ItemOrderHistory
 from .models import ItemRequest
+from .models import RequestMessage
+
 
 
 from .models import Stock
@@ -36,3 +38,4 @@ admin.site.register(FavouriteService)
 admin.site.register(ProductCategory)
 admin.site.register(OrderHistory)
 admin.site.register(ItemOrderHistory)
+admin.site.register(RequestMessage)

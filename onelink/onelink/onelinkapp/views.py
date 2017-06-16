@@ -1522,6 +1522,8 @@ class GetMySingleRequest(APIView):
                         ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud):
                             try:
+                                print("ud id : ", ud.id)
+                                print("request id : ", getservice_data['request_id'])
                                 if (ud.user_type == 0):
                                     sr = ServiceRequest.objects.get(serviceprovider_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
                                 else:
@@ -2532,7 +2534,7 @@ class RequestService(APIView):
             sn=ServiceNotification()
             sn.serviceprovider_id=sr.serviceprovider_id
             sn.serviceprovider_ref=sr.serviceprovider_ref
-            sn.servicerequest_id=sr.service_category_id
+            sn.servicerequest_id=sr.id
             sn.servicerequest_ref=sr
             sn.read=False
             #sn.save()
@@ -3425,7 +3427,7 @@ class RequestProduct(APIView):
             ino=ItemNotification()
             ino.serviceprovider_id=ir.serviceprovider_id
             ino.serviceprovider_ref=ir.serviceprovider_ref
-            ino.itemrequest_id=ir.item_category_id
+            ino.itemrequest_id=ir.id
             ino.itemrequest_ref=ir
             ino.read=False
             #sn.save()
@@ -3721,7 +3723,9 @@ class GetMySingleItemRequest(APIView):
                         if (ud):
                             try:
                                 if (ud.user_type == 0):
-                                    sr = ItemRequest.objects.get(serviceprovider_id=ud.id,id=int(request_data['request_id']))#.order_by("-request_time")
+                                    print("ud id : ",ud.id)
+                                    print("request id : ",request_data['request_id'])
+                                    sr = ItemRequest.objects.get(id=int(request_data['request_id']),serviceprovider_id=int(request_data['id']))#.order_by("-request_time")
                                 else:
                                     sr = ItemRequest.objects.get(user_id=ud.id,id=int(request_data['request_id']))#.order_by("-request_time")
 
@@ -3760,9 +3764,18 @@ class GetMySingleItemRequest(APIView):
 
 
 
-                            except ServiceMap.DoesNotExist:
+                            except ItemRequest.DoesNotExist:
                                 responsedata = {"successstatus": "error", "message": "No request Available"}
                                 print(responsedata)
+                                return Response(responsedata)
+                            except Exception as e:
+
+                                responsedata = {"successstatus": "error", "message": "Unknown Error"}
+                                print("in inner : ", responsedata)
+                                print("Error : ", e)
+                                exc_type, exc_obj, exc_tb = sys.exc_info()
+                                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                                print(True, exc_type, fname, exc_tb.tb_lineno)
                                 return Response(responsedata)
 
 
@@ -3815,7 +3828,7 @@ class SendMessage(APIView):
 
             print("obtained request service data : ",requestdata)
 
-            if ( (not requestdata["receiver_id"]) or (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key']) or (not requestdata['request_type']) (not requestdata["message"]) ) :
+            if ( (not requestdata["receiver_id"]) or (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key']) or (not requestdata['request_type']) or (not requestdata["message"]) ) :
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -3930,10 +3943,10 @@ class GetMessages(APIView):
 
             ud=UserDetail.objects.get(id=int(requestdata["user_id"]))
             userstat+=1
-            sd=UserDetail.objects.get(id=int(requestdata["receiver_id"]))
-            userstat+=1
+            # sd=UserDetail.objects.get(id=int(requestdata["receiver_id"]))
+            # userstat+=1
 
-            rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"])).order_by("-sending_time")
+            rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"])).order_by("sending_time")
             srm=RequestMessageSerializer(rm,many=True)
 
             responsedata={"successstatus":"ok","messages":srm.data}
@@ -3967,7 +3980,7 @@ class GetMessages(APIView):
         except Exception as e:
 
 
-            print("error occured in outer except RequestService ")
+            print("error occured in outer except GetMessage ")
             print("error : ",e)
             responsedata={"successstatus":"error","message":"error occured trying to request the item"}
             exc_type, exc_obj, exc_tb = sys.exc_info()
