@@ -16,6 +16,7 @@ from .models import OrderHistory
 from .models import ItemOrderHistory
 from .models import ItemRequest
 from .models import RequestMessage
+from .models import Review
 
 
 
@@ -39,3 +40,4 @@ admin.site.register(ProductCategory)
 admin.site.register(OrderHistory)
 admin.site.register(ItemOrderHistory)
 admin.site.register(RequestMessage)
+admin.site.register(Review)

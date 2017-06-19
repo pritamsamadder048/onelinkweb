@@ -189,3 +189,9 @@ class RequestMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model=RequestMessage
         fields="__all__"
+
+from .models import Review
+class ReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Review
+        fields="__all__"

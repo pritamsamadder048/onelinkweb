@@ -2416,7 +2416,7 @@ class GetProvidersList(APIView):
 
 
 
-class GetSingleProvider(APIView):
+class GetSingleService(APIView):
     def get(self,request,serviceid):
         responsedata={}
 
@@ -2428,7 +2428,7 @@ class GetSingleProvider(APIView):
 
         try:
 
-            print(ServiceMap._meta.pk.name)
+            #print(ServiceMap._meta.pk.name)
 
             sm = ServiceMap.objects.get(id=int(serviceid))
             if (sm):
@@ -2444,13 +2444,20 @@ class GetSingleProvider(APIView):
                 print(sud.data)
                 responsedata["provider_details"]=sud.data
 
-
-
-
             else:
                 responsedata = {"successstatus": "error", "message": "No Services Available"}
                 print(responsedata)
                 return Response(responsedata)
+
+            try:
+
+                r = Review.objects.filter(map_id=sm.id, review_type="SERVICE".upper(), provider_id=ud.id).order_by("-review_time")
+                if(r):
+                    rs=ReviewSerializer(r,many=True)
+                    print(rs.data)
+                    responsedata["review_data"]=rs.data
+            except Review.DoesNotExist:
+                responsedata["review_data"] = None
 
             print("Final service data : ",responsedata)
             return Response(responsedata)
@@ -2460,6 +2467,7 @@ class GetSingleProvider(APIView):
             responsedata = {"successstatus": "error", "message": "No Provider Available"}
             print(responsedata)
             return Response(responsedata)
+
         except Exception as e:
             print("unknown error occured")
             print("erro : ",e)
@@ -2528,6 +2536,7 @@ class RequestService(APIView):
             sr.service_category_id=sm.service_category_id
             sr.areapincode=areapincode
             sr.service_request_address=service_request_address
+            sr.notification=sr.getMessage()
 
             sr.save()
 
@@ -2648,6 +2657,7 @@ class RequestQuickService(APIView):
                 sr.areapincode=areapincode
                 sr.service_request_address=service_request_address
                 sr.request_detail=requestdata['request_detail']
+                sr.notification = sr.getMessage()
 
                 sr.save()
 
@@ -3421,6 +3431,7 @@ class RequestProduct(APIView):
             ir.areapincode=areapincode
             ir.item_request_address=item_request_address
             ir.item_quantity=int(requestdata['quantity'])
+            ir.notification = ir.getMessage()
 
             ir.save()
 
@@ -3701,6 +3712,8 @@ class GetMySingleItemRequest(APIView):
             for key in request.POST:
                 request_data[key] = request.POST[key].strip()
 
+            print("request data : ",request_data)
+
             if ((not request_data['id']) or (not request_data['user_session_key']) or (not request_data['request_id'])):
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
                 print(responsedata)
@@ -3935,7 +3948,7 @@ class GetMessages(APIView):
 
             print("obtained request service data : ",requestdata)
 
-            if ( (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key']) ) :
+            if ( (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key'])  or (not requestdata['request_type']) ) :
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -3946,12 +3959,12 @@ class GetMessages(APIView):
             # sd=UserDetail.objects.get(id=int(requestdata["receiver_id"]))
             # userstat+=1
 
-            rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"])).order_by("sending_time")
+            rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"]),request_type=requestdata['request_type']).order_by("sending_time")
             srm=RequestMessageSerializer(rm,many=True)
 
             responsedata={"successstatus":"ok","messages":srm.data}
 
-            print(responsedata)
+            #print(responsedata)
             return  Response(responsedata)
 
 
@@ -3990,3 +4003,267 @@ class GetMessages(APIView):
 
 
 
+
+from .models import Review
+from .serializers import ReviewSerializer
+class WriteReview(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        userstat = 0
+        service_request_address = None
+        areapincode = None
+
+        try:
+            for key in request.POST:
+                requestdata[key] = request.POST[key]
+
+            print("obtained request service data : ", requestdata)
+
+            if ( (not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata["service_star"]) or (not requestdata["quality_star"]) or (not requestdata['value_star'])  or (not requestdata['title'])   or (not requestdata['comment'])   or (not requestdata['history_id'])   or (not requestdata['review_type'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+            us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+
+            ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
+
+
+            try:
+                tr=Review.objects.get(history_id=int(requestdata['history_id']),review_type=requestdata['review_type'],user_id=ud.id)
+                if(tr):
+                    responsedata={"successstatus":"error","message":"You have already written a Review before"}
+                    print(responsedata)
+                    return Response(responsedata)
+            except:
+                pass
+
+            rv=Review()
+
+            if (requestdata['review_type'].upper() == "SERVICE"):
+                try:
+                    h = OrderHistory.objects.get(id=int(requestdata["history_id"]))
+                    if(h.review_written):
+                        responsedata = {"successstatus": "error", "message": "You have already written a Review before"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+                    m = ServiceMap.objects.get(id=h.service_map_id)
+
+                    rv.review_type="SERVICE".upper()
+                    rv.map_id=m.id
+                    rv.servicemap_ref=m
+                    rv.history_id = h.id
+                    rv.servicehistory_ref=h
+                    rv.provider_id = h.serviceprovider_id
+                    rv.provider_ref = h.serviceprovider_ref
+
+                except OrderHistory.DoesNotExist:
+                    responsedata = {"successstatus": "error", "message": "service history is not available"}
+                    print(responsedata)
+                    return Response(responsedata)
+
+                except ServiceMap.DoesNotExist:
+                    responsedata = {"successstatus": "error", "message": "service is not available"}
+                    print(responsedata)
+                    return Response(responsedata)
+
+            elif (requestdata['review_type'].upper() == "PRODUCT"):
+                try:
+                    h = ItemOrderHistory.objects.get(id=int(requestdata["history_id"]))
+                    if (h.review_written):
+                        responsedata = {"successstatus": "error", "message": "You have already written a Review before"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+                    m = ItemMap.objects.get(id=h.item_map_id)
+
+                    rv.review_type = "PRODUCT".upper()
+                    rv.map_id=m.id
+                    rv.itemmapt_ref=m
+                    rv.history_id=h.id
+                    rv.itemhistory_ref=h
+                    rv.provider_id=h.serviceprovider_id
+                    rv.provider_ref=h.serviceprovider_ref
+
+                except ItemOrderHistory.DoesNotExist:
+                    responsedata = {"successstatus": "error", "message": "product history is not available"}
+                    print(responsedata)
+                    return Response(responsedata)
+                except ItemRequest.DoesNotExist:
+                    responsedata = {"successstatus": "error", "message": "product is not available"}
+                    print(responsedata)
+                    return Response(responsedata)
+            else:
+                responsedata = {"successstatus": "error","message": "please provide correct request type [SERVICE] or [PRODUCT]"}
+                print(responsedata)
+                return Response(responsedata)
+
+
+            rv.user_id=ud.id
+            rv.user_name=ud.full_name
+            rv.user_ref=ud
+            rv.service_star=int(requestdata["service_star"])
+            rv.value_star=int(requestdata["value_star"])
+            rv.quality_star = int(requestdata["quality_star"])
+            rv.title=requestdata["title"]
+            rv.comment=requestdata["comment"]
+
+            rv.save()
+
+            h.review_written = True
+            h.save()
+
+
+
+
+
+            responsedata = {"successstatus": "ok", "message": "review posted"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+
+        except UserSession.DoesNotExist:
+            responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
+            print(responsedata)
+            return Response(responsedata)
+        except UserDetail.DoesNotExist:
+            if userstat == 0:
+                responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            elif userstat == 2:
+                responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+
+            print(responsedata)
+            return Response(responsedata)
+
+        except ItemMap.DoesNotExist:
+
+            responsedata = {"successstatus": "error",
+                            "message": "the Item you are messaging for is not available any more"}
+            print(responsedata)
+            return Response(responsedata)
+
+
+
+        except Exception as e:
+
+            print("error occured in outer except RequestService ")
+            print("error : ", e)
+            responsedata = {"successstatus": "error", "message": "error occured trying to write the review"}
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+
+#
+#
+#
+# class GetMyReviews(APIView):
+#     def post(self,request):
+#         responsedata={}
+#         requestdata={}
+#         userstat=0
+#         service_request_address=None
+#         areapincode=None
+#         h=None
+#         r=None
+#
+#
+#         try:
+#             for key in request.POST:
+#                 requestdata[key]=request.POST[key]
+#
+#             print("obtained request service data : ",requestdata)
+#
+#             if ( (not requestdata["user_id"]) or (not requestdata["history_id"]) or (not requestdata['user_session_key'])  or (not requestdata['review_type']) ) :
+#                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
+#                 print(responsedata)
+#                 return Response(responsedata)
+#             us=UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
+#
+#             ud=UserDetail.objects.get(id=int(requestdata["user_id"]))
+#             h = Review.objects.get(id=int(requestdata["history_id"]))
+#
+#             if(requestdata['request_type'].upper()=="SERVICE"):
+#                 try:
+#                     if(ud.user_type==0):
+#
+#                         r=Review.objects.filter(history_id=h.id,review_type="SERVICE".upper(),provider_id=ud.id).order_by("-review_time")
+#                     elif(ud.user_type==1):
+#                         r = Review.objects.filter(history_id=h.id, review_type="SERVICE".upper(), user_id=ud.id).order_by("-review_time")
+#                     else:
+#                         responsedata={"successstatus":"error","message":"You are not a valid user"}
+#                         print(responsedata)
+#                         return  Response(responsedata)
+#                 except Review.DoesNotExist:
+#                     responsedata={"successstatus":"error","message":"no review available"}
+#                     print(responsedata)
+#                     return Response(responsedata)
+#
+#                 if (requestdata['request_type'].upper() == "PRODUCT"):
+#                     try:
+#                         if (ud.user_type == 0):
+#
+#                             r = Review.objects.filter(history_id=h.id, review_type="PRODUCT".upper(),provider_id=ud.id).order_by("-review_time")
+#                         elif (ud.user_type == 1):
+#                             r = Review.objects.filter(history_id=h.id, review_type="PRODUCT".upper(),user_id=ud.id).order_by("-review_time")
+#                         else:
+#                             responsedata = {"successstatus": "error", "message": "You are not a valid user"}
+#                             print(responsedata)
+#                             return Response(responsedata)
+#                     except Review.DoesNotExist:
+#                         responsedata = {"successstatus": "error", "message": "no review available"}
+#                         print(responsedata)
+#                         return Response(responsedata)
+#
+#                     rs=ReviewSerializer(r,many=True)
+#
+#
+#             responsedata={"successstatus":"ok","reviews":rs.data}
+#
+#             print(responsedata)
+#             return  Response(responsedata)
+#
+#
+#         except UserSession.DoesNotExist:
+#             responsedata = {"successstatus": "error","message": "Please Login To Continue"}
+#             print(responsedata)
+#             return Response(responsedata)
+#         except UserDetail.DoesNotExist:
+#             if userstat==0:
+#                 responsedata={"successstatus":"error","message":"the user doesnot exists"}
+#
+#             elif userstat==2:
+#                 responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
+#
+#             print(responsedata)
+#             return Response(responsedata)
+#
+#         except ItemMap.DoesNotExist:
+#
+#             responsedata = {"successstatus": "error", "message": "the Item you are requesting is not available any more"}
+#             print(responsedata)
+#             return  Response(responsedata)
+#
+#
+#
+#         except Exception as e:
+#
+#
+#             print("error occured in outer except GetMessage ")
+#             print("error : ",e)
+#             responsedata={"successstatus":"error","message":"error occured trying to request the item"}
+#             exc_type, exc_obj, exc_tb = sys.exc_info()
+#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#             print(True, exc_type, fname, exc_tb.tb_lineno)
+#             return  Response(responsedata)
+#
+#
+#

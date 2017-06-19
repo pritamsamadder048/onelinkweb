@@ -64,7 +64,7 @@ urlpatterns = [
 
 
     url(r'^getproviderslist/(?P<serviceid>[0-9]+)/(?P<areapincode>[0-9]+)/$', views.GetProvidersList.as_view(),name="getproviderslist"),
-    url(r'^getsingleprovider/(?P<serviceid>[0-9]+)/$', views.GetSingleProvider.as_view(),name="getsingleprovider"),
+    url(r'^getsingleservice/(?P<serviceid>[0-9]+)/$', views.GetSingleService.as_view(),name="getsingleservice"),
 
     url(r'^requestservice/$', views.RequestService.as_view(),name="requestservice"),
 
@@ -89,6 +89,11 @@ urlpatterns = [
     url(r'^requestproduct/$', views.RequestProduct.as_view(),name="requestproduct"),
     url(r'^sendmessage/$', views.SendMessage.as_view(),name="sendmessage"),
     url(r'^getmessages/$', views.GetMessages.as_view(),name="getmessages"),
+
+
+
+    url(r'^writereview/$', views.WriteReview.as_view(),name="writereview"),
+    #url(r'^GetMyReviews/$', views.GetMyReviews.as_view(),name="getmyreviews"),
 
 
 

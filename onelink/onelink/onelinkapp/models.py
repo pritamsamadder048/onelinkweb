@@ -273,6 +273,7 @@ class ServiceRequest(models.Model):
 
     serviceprovider_id = models.IntegerField()
     serviceprovider_ref=models.ForeignKey(UserDetail,related_name='providerdetail', on_delete=models.CASCADE)
+    request_type = models.CharField(default="SERVICE", max_length=40)
 
 
 
@@ -295,6 +296,11 @@ class ServiceRequest(models.Model):
     request_detail=models.TextField(blank=True,null=True)
 
     service_status=models.IntegerField(default=0)
+    notification = models.TextField(blank=True, null=True)
+
+    def getMessage(self):
+        message = self.user_ref.full_name + " has requested for "+self.serviceprovider_ref.full_name+ "'s service : " + self.service_map_ref.service_name
+        return message
 
     def __str__(self):
         return self.service_map_ref.service_name
@@ -320,9 +326,11 @@ class OrderHistory(models.Model):
     service_request_id=models.IntegerField()
     service_request_ref=models.ForeignKey(ServiceRequest,related_name='ohservicerequest',on_delete=models.CASCADE)
     confirmation_id=models.CharField(null=True,blank=True,max_length=500)
+    models.CharField(blank=True, null=True, default="SERVICE", max_length=10)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)
+    review_written=models.BooleanField(default=False)
 
 
     def __str__(self):
@@ -370,6 +378,7 @@ class ItemRequest(models.Model):
 
     serviceprovider_id = models.IntegerField()
     serviceprovider_ref=models.ForeignKey(UserDetail,related_name='itemproviderdetail', on_delete=models.CASCADE)
+    request_type=models.CharField(default="PRODUCT",max_length=40)
 
 
 
@@ -392,6 +401,11 @@ class ItemRequest(models.Model):
     request_detail=models.TextField(blank=True,null=True)
 
     item_status=models.IntegerField(default=0)
+    notification = models.TextField(blank=True, null=True)
+
+    def getMessage(self):
+        message = self.user_ref.full_name + " has requested for " + self.serviceprovider_ref.full_name + "'s Product : " + self.item_map_ref.item_name
+        return message
 
     def __str__(self):
         return self.item_map_ref.item_name
@@ -418,6 +432,8 @@ class ItemOrderHistory(models.Model):
     item_request_id=models.IntegerField()
     item_request_ref=models.ForeignKey(ItemRequest,related_name='iohsitemrequest',on_delete=models.CASCADE)
     confirmation_id = models.CharField(null=True, blank=True, max_length=500)
+    request_type=models.CharField(blank=True, null=True, default="PRODUCT",max_length=10)
+    review_written = models.BooleanField(default=False)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)
@@ -477,3 +493,22 @@ class RequestMessage(models.Model):
 
 
 
+class Review(models.Model):
+    service_star=models.IntegerField()
+    quality_star=models.IntegerField()
+    value_star=models.IntegerField()
+    title=models.TextField()
+    comment=models.TextField()
+    user_id=models.IntegerField()
+    user_ref=models.ForeignKey(UserDetail, related_name='reviewuserdetail', on_delete=models.CASCADE)
+    user_name=models.CharField(max_length=500)
+    provider_id=models.IntegerField()
+    provider_ref=models.ForeignKey(UserDetail, related_name='reviewproviderdetail', on_delete=models.CASCADE)
+    map_id=models.IntegerField(null=True,blank=True)
+    servicemap_ref = models.ForeignKey(ServiceMap, related_name='reviewservicemap', on_delete=models.CASCADE,null=True, blank=True)
+    itemmap_ref = models.ForeignKey(ItemMap, related_name='reviewitemmap', on_delete=models.CASCADE,null=True, blank=True)
+    history_id = models.IntegerField(null=True, blank=True)
+    servicehistory_ref = models.ForeignKey(OrderHistory, related_name='reviewservicehistory',on_delete=models.CASCADE, null=True, blank=True)
+    itemhistory_ref = models.ForeignKey(ItemOrderHistory, related_name='reviewitemhistory', on_delete=models.CASCADE,null=True, blank=True)
+    review_type=models.CharField(max_length=40)#,null=True,blank=True)
+    review_time=models.DateTimeField(auto_now_add=True)
