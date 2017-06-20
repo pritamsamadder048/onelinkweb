@@ -297,6 +297,7 @@ class ServiceRequest(models.Model):
 
     service_status=models.IntegerField(default=0)
     notification = models.TextField(blank=True, null=True)
+    final_budget=models.FloatField(default=0)
 
     def getMessage(self):
         message = self.user_ref.full_name + " has requested for "+self.serviceprovider_ref.full_name+ "'s service : " + self.service_map_ref.service_name
@@ -327,6 +328,7 @@ class OrderHistory(models.Model):
     service_request_ref=models.ForeignKey(ServiceRequest,related_name='ohservicerequest',on_delete=models.CASCADE)
     confirmation_id=models.CharField(null=True,blank=True,max_length=500)
     models.CharField(blank=True, null=True, default="SERVICE", max_length=10)
+    service_status = models.IntegerField(default=1)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)
@@ -399,6 +401,7 @@ class ItemRequest(models.Model):
     request_time = models.DateTimeField(auto_now_add=True)
     #item_delivery_time=models.CharField(null=True,blank=True)
     request_detail=models.TextField(blank=True,null=True)
+    final_budget = models.FloatField(default=0)
 
     item_status=models.IntegerField(default=0)
     notification = models.TextField(blank=True, null=True)
@@ -434,6 +437,7 @@ class ItemOrderHistory(models.Model):
     confirmation_id = models.CharField(null=True, blank=True, max_length=500)
     request_type=models.CharField(blank=True, null=True, default="PRODUCT",max_length=10)
     review_written = models.BooleanField(default=False)
+    service_status = models.IntegerField(default=1)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)

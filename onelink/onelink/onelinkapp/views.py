@@ -3940,6 +3940,7 @@ class GetMessages(APIView):
         userstat=0
         service_request_address=None
         areapincode=None
+        budget=0.0
 
 
         try:
@@ -3959,10 +3960,17 @@ class GetMessages(APIView):
             # sd=UserDetail.objects.get(id=int(requestdata["receiver_id"]))
             # userstat+=1
 
+
+
             rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"]),request_type=requestdata['request_type']).order_by("sending_time")
             srm=RequestMessageSerializer(rm,many=True)
 
-            responsedata={"successstatus":"ok","messages":srm.data}
+            if(requestdata['request_type']=="PRODUCT"):
+                budget=rm[0].itemrequest_ref.final_budget
+            elif(requestdata['request_type']=="SERVICE"):
+                budget = rm[0].servicerequest_ref.final_budget
+
+            responsedata={"successstatus":"ok","messages":srm.data,"budget":budget}
 
             #print(responsedata)
             return  Response(responsedata)
@@ -4267,3 +4275,390 @@ class WriteReview(APIView):
 #
 #
 #
+
+
+
+
+
+
+
+
+
+class GetMyItemHistory(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                if(ud.user_type==0):
+                                    cr = ItemOrderHistory.objects.filter(serviceprovider_id=ud.id).order_by("-booked_time")
+                                else:
+                                    cr = ItemOrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+
+                                scr=ItemOrderHistorySerializer(cr,many=True)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+class GetMySingleItemHistory(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['history_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                if(ud.user_type==0):
+                                    cr = ItemOrderHistory.objects.get(serviceprovider_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+                                else:
+                                    cr = ItemOrderHistory.objects.filter(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+
+                                scr=ItemOrderHistorySerializer(cr)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except ItemOrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+class GetMySingleHistory(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['history_id'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                if(ud.user_type==0):
+                                    cr = OrderHistory.objects.get(serviceprovider_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+                                else:
+                                    cr = OrderHistory.objects.filter(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+
+                                scr=OrderHistorySerializer(cr)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+class SetServiceBudget(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            print("get my single request : ", getservice_data)
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key']) or (not getservice_data['request_id']) or (not getservice_data['budget'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                print("ud id : ", ud.id)
+                                print("request id : ", getservice_data['request_id'])
+                                if (ud.user_type == 0):
+                                    sr = ItemRequest.objects.get(serviceprovider_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                else:
+                                    sr = ItemRequest.objects.get(user_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+
+
+
+                                if (sr):
+                                    sr.final_budget=float(getservice_data['budget'])
+
+                                    sr.save()
+                                    # try:
+                                    #     rud = UserDetail.objects.get(id=sr.user_id)
+                                    # except Exception as e:
+                                    #     responsedata={"successstatus":"error","messgae":"could not get requester's details"}
+                                    #     print("response data : ",responsedata)
+                                    #     print("Error occured : ",e)
+                                    #     return Response(responsedata)
+
+
+                                    # print("sm : ",sm)
+                                    #print("final data : ",tdata)
+
+                                    responsedata = {"successstatus": "ok", "message": "budget has been set"}
+
+                                    return Response(responsedata)
+
+                                else:
+                                    responsedata = {"successstatus": "error", "message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+
+
+                            # except ServiceMap.DoesNotExist:
+                            #     responsedata = {"successstatus": "error", "message": "No request Available"}
+                            #     print(responsedata)
+                            #     return Response(responsedata)
+                            except ItemRequest.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+

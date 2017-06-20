@@ -83,6 +83,10 @@ urlpatterns = [
     url(r'^confirmrequest/$', views.ConfirmRequest.as_view(),name="confirmrequest"),
     url(r'^confirmitemrequest/$', views.ConfirmItemRequest.as_view(),name="confirmitemrequest"),
     url(r'^getmyhistory/$', views.GetMyHistory.as_view(),name="getmyhistory"),
+    url(r'^getmysinglehistory/$', views.GetMySingleHistory.as_view(),name="getmysinglehistory"),
+
+    url(r'^getmyitemhistory/$', views.GetMyItemHistory.as_view(),name="getmyitemhistory"),
+    url(r'^getmysingleitemhistory/$', views.GetMySingleItemHistory.as_view(),name="getmysingleitemhistory"),
 
 
 
@@ -93,6 +97,7 @@ urlpatterns = [
 
 
     url(r'^writereview/$', views.WriteReview.as_view(),name="writereview"),
+    url(r'^setservicebudget/$', views.SetServiceBudget.as_view(),name="setservicebudget"),
     #url(r'^GetMyReviews/$', views.GetMyReviews.as_view(),name="getmyreviews"),
 
 
