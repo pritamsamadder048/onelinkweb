@@ -97,7 +97,21 @@ urlpatterns = [
 
 
     url(r'^writereview/$', views.WriteReview.as_view(),name="writereview"),
-    url(r'^setservicebudget/$', views.SetServiceBudget.as_view(),name="setservicebudget"),
+    url(r'^setitembudget/$', views.SetItemBudget.as_view(),name="setitembudget"),
+
+
+
+
+    url(r'^setitempaid/$', views.SetItemPaid.as_view(),name="setitempaid"),
+
+
+
+
+
+
+
+
+
     #url(r'^GetMyReviews/$', views.GetMyReviews.as_view(),name="getmyreviews"),
 
 

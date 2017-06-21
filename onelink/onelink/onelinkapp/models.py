@@ -381,6 +381,8 @@ class ItemRequest(models.Model):
     serviceprovider_id = models.IntegerField()
     serviceprovider_ref=models.ForeignKey(UserDetail,related_name='itemproviderdetail', on_delete=models.CASCADE)
     request_type=models.CharField(default="PRODUCT",max_length=40)
+    # history_id=models.IntegerField(null=True,blank=True)
+    # history_ref=models.ForeignKey(ItemOrderHistory,related_name='itemorderhistoryref', on_delete=models.CASCADE,null=True,blank=True)
 
 
 
@@ -405,6 +407,11 @@ class ItemRequest(models.Model):
 
     item_status=models.IntegerField(default=0)
     notification = models.TextField(blank=True, null=True)
+
+    paid=models.BooleanField(default=False)
+    payment_state=models.CharField(max_length=40,null=True,blank=True)
+    payment_id=models.CharField(max_length=500,null=True,blank=True)
+    payment_time=models.CharField(max_length=40,null=True,blank=True)
 
     def getMessage(self):
         message = self.user_ref.full_name + " has requested for " + self.serviceprovider_ref.full_name + "'s Product : " + self.item_map_ref.item_name
@@ -438,6 +445,11 @@ class ItemOrderHistory(models.Model):
     request_type=models.CharField(blank=True, null=True, default="PRODUCT",max_length=10)
     review_written = models.BooleanField(default=False)
     service_status = models.IntegerField(default=1)
+
+    paid = models.BooleanField(default=False)
+    payment_state = models.CharField(max_length=40, null=True, blank=True)
+    payment_id = models.CharField(max_length=500, null=True, blank=True)
+    payment_time = models.CharField(max_length=40, null=True, blank=True)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)

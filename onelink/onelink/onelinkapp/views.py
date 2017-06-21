@@ -4546,7 +4546,7 @@ class GetMySingleHistory(APIView):
 
 
 
-class SetServiceBudget(APIView):
+class SetItemBudget(APIView):
 
     def post(self, request):
 
@@ -4623,6 +4623,151 @@ class SetServiceBudget(APIView):
                             #     return Response(responsedata)
                             except ItemRequest.DoesNotExist:
                                 responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class SetItemPaid(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            print("get my single request : ", getservice_data)
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key']) or (not getservice_data['request_id']) or (not getservice_data['payment_state']) or (not getservice_data['payment_id']) or (not getservice_data['payment_time'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                print("ud id : ", ud.id)
+                                print("request id : ", getservice_data['request_id'])
+                                # if (ud.user_type == 0):
+                                #     sr = ItemRequest.objects.get(serviceprovider_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                # else:
+                                #     sr = ItemRequest.objects.get(user_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                sr = ItemRequest.objects.get(user_id=ud.id, id=int(getservice_data['request_id']))  # .order_by("-request_time")
+
+
+                                if (sr):
+                                    sr.payment_state=float(getservice_data['payment_state'])
+                                    sr.payment_id=float(getservice_data['payment_id'])
+                                    sr.payment_time=float(getservice_data['payment_time'])
+                                    sr.service_status=2
+                                    sr.paid=True
+
+
+                                    sr.save()
+
+                                else:
+                                    responsedata = {"successstatus": "error", "message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+                                sh = ItemOrderHistory.objects.get(user_id=ud.id, item_request_id=int(getservice_data['request_id']))  # .order_by("-request_time")
+
+                                if (sh):
+                                    sh.payment_state = float(getservice_data['payment_state'])
+                                    sh.payment_id = float(getservice_data['payment_id'])
+                                    sh.payment_time = float(getservice_data['payment_time'])
+                                    sh.service_status=2
+                                    sh.paid = True
+
+                                    sh.save()
+
+                                else:
+                                    responsedata = {"successstatus": "error", "message": "No History Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+                                responsedata={"successstatus":"ok","message":"payment details updated successfully"}
+                                print(responsedata)
+                                return  Response(responsedata)
+
+
+
+
+                            # except ServiceMap.DoesNotExist:
+                            #     responsedata = {"successstatus": "error", "message": "No request Available"}
+                            #     print(responsedata)
+                            #     return Response(responsedata)
+                            except ItemRequest.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+                            except ItemOrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No history Available"}
                                 print(responsedata)
                                 return Response(responsedata)
 
