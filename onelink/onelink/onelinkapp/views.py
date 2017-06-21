@@ -4721,9 +4721,9 @@ class SetItemPaid(APIView):
 
 
                                 if (sr):
-                                    sr.payment_state=float(getservice_data['payment_state'])
-                                    sr.payment_id=float(getservice_data['payment_id'])
-                                    sr.payment_time=float(getservice_data['payment_time'])
+                                    sr.payment_state=getservice_data['payment_state']
+                                    sr.payment_id=getservice_data['payment_id']
+                                    sr.payment_time=getservice_data['payment_time']
                                     sr.service_status=2
                                     sr.paid=True
 
@@ -4738,9 +4738,9 @@ class SetItemPaid(APIView):
                                 sh = ItemOrderHistory.objects.get(user_id=ud.id, item_request_id=int(getservice_data['request_id']))  # .order_by("-request_time")
 
                                 if (sh):
-                                    sh.payment_state = float(getservice_data['payment_state'])
-                                    sh.payment_id = float(getservice_data['payment_id'])
-                                    sh.payment_time = float(getservice_data['payment_time'])
+                                    sh.payment_state = getservice_data['payment_state']
+                                    sh.payment_id = getservice_data['payment_id']
+                                    sh.payment_time = getservice_data['payment_time']
                                     sh.service_status=2
                                     sh.paid = True
 
