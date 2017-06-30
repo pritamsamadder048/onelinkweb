@@ -63,6 +63,7 @@ class UserDetail(models.Model):
     key = models.CharField(max_length=40)
     password = models.CharField(max_length=200)
     user_type = models.IntegerField(default=0)
+    user_image=models.TextField(null=True,blank=True)
 
     user_createtime = models.DateTimeField(auto_now_add=True)
     # profile_picture = models.ImageField(upload_to=profile_picture_upload_location,
@@ -225,9 +226,11 @@ class ServiceMap(models.Model):
     mobile = models.CharField(max_length=20)
     service_category_id=models.IntegerField()
     service_ref=models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
+    servicemap_image=models.TextField(null=True,blank=True)
     #subservice_id=models.IntegerField()
     areapincode=models.CharField(max_length=10)
     register_time=models.DateTimeField(auto_now_add=True,blank=True,null=True)
+
 
 
 
@@ -260,10 +263,16 @@ class ItemMap(models.Model):
     # height_field = models.IntegerField(default=0)
     # width_field = models.IntegerField(default=0)
 
-    item_image = models.TextField(null=True,blank=True)
+
 
     item_MRP=models.FloatField()
     item_SLP=models.FloatField()
+
+    itemmap_image1=models.TextField(null=True,blank=True)
+    itemmap_image2=models.TextField(null=True,blank=True)
+    itemmap_image3=models.TextField(null=True,blank=True)
+    itemmap_image4=models.TextField(null=True,blank=True)
+    itemmap_image5=models.TextField(null=True,blank=True)
 
     def __str__(self):
         return self.item_name
@@ -294,6 +303,7 @@ class ServiceRequest(models.Model):
     request_time = models.DateTimeField(auto_now_add=True)
     service_time=models.CharField(null=True,blank=True,max_length=200)
     request_detail=models.TextField(blank=True,null=True)
+    request_image=models.TextField(blank=True,null=True)
 
     service_status=models.IntegerField(default=0)
     notification = models.TextField(blank=True, null=True)

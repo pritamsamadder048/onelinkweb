@@ -34,7 +34,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=UserDetail
-        fields=("id","full_name","email","mobile","pincode","country","city","district","building","street","user_type")
+        fields=("id","full_name","email","mobile","pincode","country","city","district","building","street","user_type","user_image")
 
 
 
@@ -67,7 +67,7 @@ class ServiceSubCategorySerializer(serializers.ModelSerializer):
 class ServiceMapSerializer(serializers.ModelSerializer):
     class Meta:
         model=ServiceMap
-        fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode')
+        fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode','servicemap_image')
 
 
 class ItemMapSerializer(serializers.ModelSerializer):

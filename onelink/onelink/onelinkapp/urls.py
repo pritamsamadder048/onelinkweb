@@ -63,7 +63,7 @@ urlpatterns = [
 
 
 
-    url(r'^getproviderslist/(?P<serviceid>[0-9]+)/(?P<areapincode>[0-9]+)/$', views.GetProvidersList.as_view(),name="getproviderslist"),
+    url(r'^getproviderslist/(?P<serviceid>[0-9]+)/(?P<areapincodes>.+)/$', views.GetProvidersList.as_view(),name="getproviderslist"),
     url(r'^getsingleservice/(?P<serviceid>[0-9]+)/$', views.GetSingleService.as_view(),name="getsingleservice"),
 
     url(r'^requestservice/$', views.RequestService.as_view(),name="requestservice"),
@@ -103,6 +103,7 @@ urlpatterns = [
 
 
     url(r'^setitempaid/$', views.SetItemPaid.as_view(),name="setitempaid"),
+    url(r'^updateservicestatus/$', views.UpdateServiceStatus.as_view(),name="updateservicestatus"),
 
 
 

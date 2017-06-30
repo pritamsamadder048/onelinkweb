@@ -13,6 +13,7 @@ from urllib.request import urlopen
 
 
 from  django.shortcuts import get_object_or_404
+from django.db.models import Q
 from rest_framework.views import APIView
 from rest_framework.response import  Response
 from  rest_framework import  status
@@ -45,6 +46,28 @@ from onelink import settings
 from .models import Stock
 from .serializers import StockSerializer
 
+
+
+
+
+
+
+
+'''
+status_code                                          Meaning
+
+  0----------------------------------------------------not confirmed
+  1----------------------------------------------------confirmed
+  2----------------------------------------------------paid
+  3----------------------------------------------------rejected
+  4----------------------------------------------------work started[service] /shipped[product]
+  5----------------------------------------------------ongoing[service]
+  6----------------------------------------------------on hold[service]
+  7----------------------------------------------------work completed[service]
+  8----------------------------------------------------payment received[service]
+  
+
+'''
 class StockList(APIView):
 
      def get(self,request):
@@ -188,6 +211,8 @@ class RegisterUser(APIView):
                 if signup_data.get('email',None) is not None:
 
                     ud.email = signup_data["email"]
+                if signup_data.get('user_image',None) is not None:
+                    ud.user_image=signup_data['user_image']
                 ud.mobile = signup_data['mobile']
                 ud.pincode=signup_data["pincode"]
                 ud.country=signup_data["country"]
@@ -202,6 +227,7 @@ class RegisterUser(APIView):
                 print("trying to save data")
 
                 ud.save()
+                print("user details : ",ud)
 
                 #s=sendverificationlink_fun(ud.id)
 
@@ -289,6 +315,8 @@ class UpdateUser(APIView):
 
                     if signup_data.get('email', None) is not None:
                         ud.email = signup_data["email"]
+                    if signup_data.get('user_image', None) is not None:
+                        ud.user_image = signup_data["user_image"]
                     #ud.mobile = signup_data['mobile']
                     ud.pincode = signup_data["pincode"]
                     ud.country = signup_data["country"]
@@ -305,6 +333,7 @@ class UpdateUser(APIView):
 
                     ud.save()
                     sud=UserDetailSerializer(ud)
+                    print("user details : ", ud)
                     responsedata = {"successstatus": "ok","message": "Profile Updated Successfully","userdetail":sud.data}
                     print(responsedata)
                     return Response(responsedata)
@@ -927,6 +956,8 @@ class RegisterService(APIView):
                                 sm.service_category_id=registerservice_data['service_category_id']
                                 sm.service_ref = sc
                                 sm.areapincode=registerservice_data['areapincode']
+                                if(registerservice_data.get("servicemap_image",None) is not None):
+                                    sm.servicemap_image=registerservice_data["servicemap_image"]
 
                                 sm.save()
 
@@ -1066,6 +1097,9 @@ class UpdateService(APIView):
                                 sm.mobile = ud.mobile
 
                                 sm.areapincode = updateservice_data['areapincode']
+
+                                if (updateservice_data.get("servicemap_image", None) is not None):
+                                    sm.servicemap_image = updateservice_data["servicemap_image"]
 
                                 sm.save()
 
@@ -1680,6 +1714,17 @@ class AddItem(APIView):
                                 im.item_SLP=additem_data['item_SLP']
                                 im.mobile=ud.mobile
 
+                                if(additem_data.get("itemmap_image1",None) is not None):
+                                    im.itemmap_image1=additem_data["itemmap_image1"]
+                                if (additem_data.get("itemmap_image2", None) is not None):
+                                    im.itemmap_image2 = additem_data["itemmap_image2"]
+                                if (additem_data.get("itemmap_image3", None) is not None):
+                                    im.itemmap_image3 = additem_data["itemmap_image3"]
+                                if (additem_data.get("itemmap_image4", None) is not None):
+                                    im.itemmap_image4 = additem_data["itemmap_image4"]
+                                if (additem_data.get("itemmap_image5", None) is not None):
+                                    im.itemmap_image5 = additem_data["itemmap_image5"]
+
 
                                 im.save()
 
@@ -1803,6 +1848,17 @@ class UpdateItem(APIView):
                                 im.item_features = updateitem_data['item_features']
                                 im.item_MRP = updateitem_data['item_MRP']
                                 im.item_SLP = updateitem_data['item_SLP']
+
+                                if (updateitem_data.get("itemmap_image1", None) is not None):
+                                    im.itemmap_image1 = updateitem_data["itemmap_image1"]
+                                if (updateitem_data.get("itemmap_image2", None) is not None):
+                                    im.itemmap_image2 = updateitem_data["itemmap_image2"]
+                                if (updateitem_data.get("itemmap_image3", None) is not None):
+                                    im.itemmap_image3 = updateitem_data["itemmap_image3"]
+                                if (updateitem_data.get("itemmap_image4", None) is not None):
+                                    im.itemmap_image4 = updateitem_data["itemmap_image4"]
+                                if (updateitem_data.get("itemmap_image5", None) is not None):
+                                    im.itemmap_image5 = updateitem_data["itemmap_image5"]
 
                                 im.save()
 
@@ -2045,6 +2101,7 @@ from .serializers import ProviderNotificationSerializer
 from .models import ServiceNotification
 from .serializers import ItemNotificationSerializer
 from .models import ItemNotification
+
 class GetMyNotifications(APIView):
 
     def post(self, request):
@@ -2377,19 +2434,31 @@ class GetMyHistory(APIView):
 
 ##############################################################################################################################
 ####################################### Normal user section ##################################################################
-
+from functools import reduce
 class GetProvidersList(APIView):
-    def get(self,request,serviceid,areapincode):
+    def get(self,request,serviceid,areapincodes):
         responsedata={}
 
-        if((not serviceid) or (not areapincode)):
+        print("service id : ",serviceid)
+        print("pincodes : ",areapincodes)
+
+        if((not serviceid) or (not areapincodes)):
             print("not all data in getproviderslist")
             responsedata={"successstatus":"error","message":"please procvide all the details necessary"}
             print("in get providers list : ",responsedata)
             return  Response(responsedata)
 
+        areapincodes=areapincodes.replace("%22",'"')
+        #print(type(areapincodes))
+
+
+        areapincodes=json.loads(areapincodes)
+        #print(type(areapincodes))
+
         try:
-            sm = ServiceMap.objects.filter(service_category_id=int(serviceid),areapincode=areapincode)
+            #sm = ServiceMap.objects.filter(service_category_id=int(serviceid),areapincode=areapincodes[0])
+            sm=ServiceMap.objects.filter(reduce(lambda x, y: x | y, [Q(service_category_id=int(serviceid),areapincode=pincode) for pincode in areapincodes])).order_by("-areapincode")
+            #print("sm : ",sm)
             if (sm):
                 ssm = ServiceMapSerializer(sm, many=True)
                 print(ssm.data)
@@ -2485,6 +2554,7 @@ from .serializers import ServiceRequestSerializer
 
 from .models import ServiceNotification
 from .serializers import ServiceRequestSerializer
+
 class RequestService(APIView):
 
     def post(self,request):
@@ -2537,6 +2607,11 @@ class RequestService(APIView):
             sr.areapincode=areapincode
             sr.service_request_address=service_request_address
             sr.notification=sr.getMessage()
+            if(requestdata.get("request_detail",None) is not None):
+                sr.request_detail = requestdata["request_detail"]
+
+            if(requestdata.get("request_image",None) is not None):
+                sr.request_image=requestdata["request_image"]
 
             sr.save()
 
@@ -2718,176 +2793,122 @@ class RequestQuickService(APIView):
             return  Response(responsedata)
 
 
-#
-# class SendRequestMessage(APIView):
-#     def post(self,request):
-#         responsedata = {}
-#         requestdata = {}
-#         #userstat = 0
-#         service_request_address = None
-#         areapincode = None
-#
-#         try:
-#             for key in request.POST:
-#                 requestdata[key] = request.POST[key]
-#
-#             print("obtained request service data : ", requestdata)
-#
-#             if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicerequest_id']) or (not requestdata['message'])):
-#                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
-#                 print(responsedata)
-#                 return Response(responsedata)
-#             us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
-#
-#             ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
-#
-#             sr=ServiceRequest.objects.get(id=int(requestdata["servicerequest_id"]))
-#             smid=sr.service_map_id
-#             sm=ServiceMap.objects.get(id=smid)
-#             src=ServiceRequestChat()
-#             if ud.id==sr.user_id:
-#                 src.sender_id=ud.id
-#                 src.sender_ref=ud
-#                 src.receiver_id=sr.serviceprovider_id
-#                 src.receiver_ref=sr.serviceprovider_ref
-#                 src.customer_id=ud.id
-#                 src.service_map_id=sm.id
-#                 src.service_map_ref=sm
-#                 src.request_id=sr.id
-#                 src.request_ref=sr
-#                 src.message_detail=requestdata["message"]
-#                 src.read=False
-#                 src.save()
-#             elif ud.id==sr.serviceprovider_id:
-#                 sr.receiver_id=ud.id
-#                 src.receiver_ref=ud
-#                 src.sender_id=sr.user_id
-#                 src.sender_ref=sr.user_ref
-#                 src.customer_id=sr.user_id
-#                 src.service_map_id=sm.id
-#                 src.service_map_ref=sm
-#                 src.request_id=sr.id
-#                 src.request_ref=sr
-#                 src.message_detail=requestdata["message"]
-#                 src.read=False
-#                 src.save()
-#             else:
-#                 responsedata={"successstatus":"error","message":"you can only send message to a provider you have requested service to"}
-#                 print(responsedata)
-#                 return  Response(responsedata)
-#             responsedata={"successstatus":"ok","message":"you have successfully sent a message "}
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#
-#
-#         except UserSession.DoesNotExist:
-#             responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
-#             print(responsedata)
-#             return Response(responsedata)
-#         except UserDetail.DoesNotExist:
-#             responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
-#
-#
-#
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#         except ServiceMap.DoesNotExist:
-#
-#             responsedata = {"successstatus": "error",
-#                             "message": "the service you are requesting is not available any more"}
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#         except ServiceRequest.DoesNotExist:
-#             responsedata={"successstatus":"error","message":"the service doesnot exist anymore"}
-#             print(responsedata)
-#             return  Response(responsedata)
-#
-#         except Exception as e:
-#
-#             print("error occured in outer except RequestService ")
-#             print("error : ", e)
-#             responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
-#             exc_type, exc_obj, exc_tb = sys.exc_info()
-#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#             print(True, exc_type, fname, exc_tb.tb_lineno)
-#             return Response(responsedata)
-#
-# class GetRequestMessages(APIView):
-#     def post(self,request):
-#         responsedata = {}
-#         requestdata = {}
-#         # userstat = 0
-#         service_request_address = None
-#         areapincode = None
-#
-#         try:
-#             for key in request.POST:
-#                 requestdata[key] = request.POST[key]
-#
-#             print("obtained request service data : ", requestdata)
-#
-#             if ((not requestdata["user_id"]) or (not requestdata['user_session_key']) or (not requestdata['servicerequest_id'])):
-#                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
-#                 print(responsedata)
-#                 return Response(responsedata)
-#             us = UserSession.objects.get(UserSession_key=requestdata['user_session_key'])
-#
-#             ud = UserDetail.objects.get(id=int(requestdata["user_id"]))
-#
-#             sr = ServiceRequest.objects.get(id=int(requestdata["servicerequest_id"]))
-#             smid = sr.service_map_id
-#             sm = ServiceMap.objects.get(id=smid)
-#             src = ServiceRequestChat.objects.filter(request_id=int(requestdata["servicerequest_id"]),customer_id=ud.id).order_by("-sending_time")
-#             sersrc=ServiceRequestChatSerializer(src,many=True)
-#             responsedata={"successstatus":"ok","messages":sersrc.data}
-#             print(responsedata)
-#             return  Response(responsedata)
-#
-#
-#
-#
-#
-#         except UserSession.DoesNotExist:
-#             responsedata = {"successstatus": "error", "message": "Please Login To Continue"}
-#             print(responsedata)
-#             return Response(responsedata)
-#         except UserDetail.DoesNotExist:
-#             responsedata = {"successstatus": "error", "message": "the user doesnot exists"}
-#
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#         except ServiceMap.DoesNotExist:
-#
-#             responsedata = {"successstatus": "error",
-#                             "message": "the service you are requesting is not available any more"}
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#         except ServiceRequest.DoesNotExist:
-#             responsedata = {"successstatus": "error", "message": "the service doesnot exist anymore"}
-#             print(responsedata)
-#             return Response(responsedata)
-#         except ServiceRequestChat.DoesNotExist:
-#             responsedata={"successstatus":"error","message":"no message available for this convertetions"}
-#             print(responsedata)
-#             return Response(responsedata)
-#
-#         except Exception as e:
-#
-#             print("error occured in outer except RequestService ")
-#             print("error : ", e)
-#             responsedata = {"successstatus": "error", "message": "error occured trying to request the service"}
-#             exc_type, exc_obj, exc_tb = sys.exc_info()
-#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#             print(True, exc_type, fname, exc_tb.tb_lineno)
-#             return Response(responsedata)
-#
-        
-        
+
+
+
+
+
+
+class UpdateServiceStatus(APIView):
+    def post(self,request):
+
+        responsedata = {}
+        requestdata={}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['servicehistory_id']) or (not requestdata["status_id"])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud and ud.user_type==0):
+                            try:
+                                ir=OrderHistory.objects.get(id=int(requestdata["servicehistory_id"]),serviceprovider_id=ud.id)
+
+
+                                if(ir.service_status>int(requestdata["status_id"]) and int(requestdata["status_id"])!=3 ):
+
+                                    responsedata={"successstatus":"error","message":"you can not change to previous status"}
+                                    print(responsedata)
+                                    return  Response(responsedata)
+                                ir.service_status=int(requestdata["status_id"])
+                                ir.save()
+
+                                sr=ServiceRequest.objects.get(id=ir.service_map_id)
+                                sr.save()
+
+
+
+                                sr.save()
+
+                                responsedata={"successstatus":"ok","message":"status updated successfully"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata={"successstatus":"error","messsage":'No History availabe for you with given details'}
+                                print(responsedata)
+                                return  Response(responsedata)
+
+                            except ServiceRequest.DoesNotExist:
+                                responsedata={"successstatus":"error","messsage":'No Service availabe for you with given details'}
+                                print(responsedata)
+                                return  Response(responsedata)
+
+                    except Exception as e:
+                        responsedata={"successstatus":"error","message":"Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ",e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in Confirm Order : outer except : ", responsedata)
+            print("Error : ",e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
+
+
+
+
+
+
+
+
 class AddToFavouriteService(APIView):
     def post(self,request):
         responsedata = {}
@@ -3341,20 +3362,27 @@ from urllib.request import urlopen
 class GetPincode(APIView):
     def get(self,request,lan,lat):
         responsedata={}
+        pincodes=[]
+        a={}
         try:
             if((not lan) or  (not lat)):
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return  Response(responsedata)
-            url="http://api.geonames.org/findNearbyPostalCodesJSON?lat={0}&lng={1}&username=vaibhawm"
+            url="http://api.geonames.org/findNearbyPostalCodesJSON?lat={0}&lng={1}&radius=5&maxRows=100&username=vaibhawm"
             furl=url.format(float(lan),float(lat))
             r=urlopen(furl)
             d=r.read().decode()
-            print(type(d))
+            #print(type(d))
             d=json.loads(d)
             #print(d)
-            pincode=d["postalCodes"][0]["postalCode"]
-            responsedata={"successstatus":"ok","pincode":pincode}
+            d=d["postalCodes"]
+            for i in d:
+                pincodes.append(i["postalCode"])
+            for p in pincodes:
+                a[p] = 0
+            pincodes=list(a.keys())
+            responsedata={"successstatus":"ok","pincodes":pincodes}
             print(responsedata)
             return Response(responsedata)
         except Exception as e:
