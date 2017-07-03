@@ -168,7 +168,7 @@ class RegisterUser(APIView):
             print("sign up data : ",signup_data)
 
             try:
-                if ( (not signup_data['mobile']) or (not signup_data['name'])  or (not signup_data['password']) or (not signup_data['pincode']) or (not signup_data['country'])  or (not signup_data['district'])   or (not signup_data['city'])   or (not signup_data['street'])  or (not signup_data['building'])   or (not signup_data['user_type'])):
+                if ( (not signup_data['mobile']) or (not signup_data['name'])  or (not signup_data['password']) or (not signup_data['pincode']) or (not signup_data['country'])    or (not signup_data['city']) or (not signup_data['user_type'])):
 
                     #print("not all data",responsedata)
 
@@ -217,9 +217,13 @@ class RegisterUser(APIView):
                 ud.pincode=signup_data["pincode"]
                 ud.country=signup_data["country"]
                 ud.city=signup_data["city"]
-                ud.district=signup_data["district"]
-                ud.street=signup_data["street"]
-                ud.building=signup_data["building"]
+                if(signup_data.get('district',None) is not None):
+                    ud.district=signup_data["district"]
+                if (signup_data.get('street', None) is not None):
+                    ud.street=signup_data["street"]
+                if (signup_data.get('building', None) is not None):
+                    ud.building=signup_data["building"]
+
                 ud.user_type = signup_data['user_type']
 
                 ud.set_password(signup_data['password'])
@@ -2158,9 +2162,14 @@ class GetMyNotifications(APIView):
                                         ssn = ProviderNotificationSerializer(sn, many=True)
                                         #print("Items : ",ssn.data)
                                         snot=ssn.data
-                                        for s in snot:
-                                            if not s["read"]:
+                                        for s in range(0,len(snot)):
+
+                                            snot[s]["requester"]=sn[s].servicerequest_ref.user_ref.full_name
+                                            snot[s]["service"]=sn[s].servicerequest_ref.service_map_ref.service_name
+                                            if not snot[s]["read"]:
+
                                                 tot_servicenot+=1
+                                                
 
                                     else:
                                         snot=None
@@ -2175,10 +2184,12 @@ class GetMyNotifications(APIView):
                                         spn = ItemNotificationSerializer(pn, many=True)
                                         # print("Items : ",ssn.data)
                                         pnot=spn.data
-                                        for s in pnot:
-                                            if not s["read"]:
-                                                tot_productnot+=1
+                                        for s in range(0,len(pnot)):
 
+                                            pnot[s]["requester"]=pn[s].itemrequest_ref.user_ref.full_name
+                                            pnot[s]["service"]=pn[s].itemrequest_ref.item_map_ref.item_name
+                                            if not pnot[s]["read"]:
+                                                tot_productnot+=1
 
 
                                     else:
@@ -2456,8 +2467,8 @@ class GetProvidersList(APIView):
         #print(type(areapincodes))
 
         try:
-            #sm = ServiceMap.objects.filter(service_category_id=int(serviceid),areapincode=areapincodes[0])
-            sm=ServiceMap.objects.filter(reduce(lambda x, y: x | y, [Q(service_category_id=int(serviceid),areapincode=pincode) for pincode in areapincodes])).order_by("-areapincode")
+            sm = ServiceMap.objects.filter(service_category_id=int(serviceid))#,areapincode=areapincodes[0])
+            #sm=ServiceMap.objects.filter(reduce(lambda x, y: x | y, [Q(service_category_id=int(serviceid),areapincode=pincode) for pincode in areapincodes])).order_by("-areapincode")
             #print("sm : ",sm)
             if (sm):
                 ssm = ServiceMapSerializer(sm, many=True)
@@ -3992,13 +4003,16 @@ class GetMessages(APIView):
 
             rm=RequestMessage.objects.filter(request_id=int(requestdata["request_id"]),request_type=requestdata['request_type']).order_by("sending_time")
             srm=RequestMessageSerializer(rm,many=True)
+            try:
 
-            if(requestdata['request_type']=="PRODUCT"):
-                budget=rm[0].itemrequest_ref.final_budget
-            elif(requestdata['request_type']=="SERVICE"):
-                budget = rm[0].servicerequest_ref.final_budget
+                if(requestdata['request_type']=="PRODUCT"):
+                    budget=rm[0].itemrequest_ref.final_budget
+                elif(requestdata['request_type']=="SERVICE"):
+                    budget = rm[0].servicerequest_ref.final_budget
 
-            responsedata={"successstatus":"ok","messages":srm.data,"budget":budget}
+                responsedata={"successstatus":"ok","messages":srm.data,"budget":budget}
+            except:
+                pass
 
             #print(responsedata)
             return  Response(responsedata)
@@ -4435,9 +4449,10 @@ class GetMySingleItemHistory(APIView):
                                 if(ud.user_type==0):
                                     cr = ItemOrderHistory.objects.get(serviceprovider_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
                                 else:
-                                    cr = ItemOrderHistory.objects.filter(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+                                    cr = ItemOrderHistory.objects.get(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
 
                                 scr=ItemOrderHistorySerializer(cr)
+
 
                                 responsedata = {"successstatus": "ok", "history":scr.data}
                                 print(responsedata)

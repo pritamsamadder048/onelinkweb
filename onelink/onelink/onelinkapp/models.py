@@ -57,9 +57,9 @@ class UserDetail(models.Model):
 
     country = models.TextField();
     city = models.TextField();
-    district = models.TextField();
-    building = models.TextField();
-    street = models.TextField();
+    district = models.TextField(null=True,blank=True);
+    building = models.TextField(null=True,blank=True);
+    street = models.TextField(null=True,blank=True);
     key = models.CharField(max_length=40)
     password = models.CharField(max_length=200)
     user_type = models.IntegerField(default=0)
@@ -363,7 +363,7 @@ class ServiceNotification(models.Model):
     notification=models.TextField(blank=True,null=True)
 
     def getMessage(self):
-        message = self.servicerequest_ref.user_ref.full_name + " has requested for your service : " + self.servicerequest_ref.service_map_ref.service_name
+        message = self.servicerequest_ref.user_ref.full_name + " has requested for your service "#: " + self.servicerequest_ref.service_map_ref.service_name
         return message
 
     def __str__(self):
@@ -482,7 +482,7 @@ class ItemNotification(models.Model):
     notification=models.TextField(blank=True,null=True)
 
     def getMessage(self):
-        message = self.itemrequest_ref.user_ref.full_name + " has requested for your product : " + self.itemrequest_ref.item_map_ref.item_name
+        message = self.itemrequest_ref.user_ref.full_name + " has requested for your product "#: " + self.itemrequest_ref.item_map_ref.item_name
         return message
 
     def __str__(self):
