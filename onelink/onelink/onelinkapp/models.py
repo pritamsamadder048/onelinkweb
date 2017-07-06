@@ -218,18 +218,19 @@ class ServiceMap(models.Model):
 
 
     serviceprovider_id=models.IntegerField()
-    service_name=models.CharField(max_length=500)
-    license_no = models.CharField(max_length=40)
-    under_gov = models.CharField(max_length=40)
-    service_details=models.TextField()
+    service_name=models.CharField(max_length=500,blank=True,null=True)
+    license_no = models.CharField(max_length=40,blank=True,null=True)
+    under_gov = models.CharField(max_length=40,blank=True,null=True)
+    service_details=models.TextField(blank=True,null=True)
     serviceprovider_email=models.EmailField(blank=True,null=True)
-    mobile = models.CharField(max_length=20)
+    mobile = models.CharField(max_length=20,blank=True,null=True)
     service_category_id=models.IntegerField()
     service_ref=models.ForeignKey(ServiceCategory, on_delete=models.CASCADE)
     servicemap_image=models.TextField(null=True,blank=True)
     #subservice_id=models.IntegerField()
     areapincode=models.CharField(max_length=10)
     register_time=models.DateTimeField(auto_now_add=True,blank=True,null=True)
+    service_type=models.CharField(max_length=40,null=True,blank=True)
 
 
 
@@ -293,6 +294,8 @@ class ServiceRequest(models.Model):
 
     service_map_id = models.IntegerField()
     service_map_ref = models.ForeignKey(ServiceMap, on_delete=models.CASCADE)
+    service_type = models.CharField(max_length=40, null=True, blank=True)
+    read=models.BooleanField(default=False)
 
 
 
@@ -339,6 +342,7 @@ class OrderHistory(models.Model):
     confirmation_id=models.CharField(null=True,blank=True,max_length=500)
     models.CharField(blank=True, null=True, default="SERVICE", max_length=10)
     service_status = models.IntegerField(default=1)
+    service_type = models.CharField(max_length=40, null=True, blank=True)
 
 
     booked_time = models.DateTimeField(auto_now_add=True)
@@ -358,6 +362,7 @@ class ServiceNotification(models.Model):
     servicerequest_ref=models.ForeignKey(ServiceRequest, on_delete=models.CASCADE)
     request_time = models.DateTimeField(auto_now_add=True)
     request_type=models.CharField(blank=True,null=True,default="SERVICE",max_length=10)
+    service_type = models.CharField(max_length=40, null=True, blank=True)
 
     read=models.BooleanField(default=False)
     notification=models.TextField(blank=True,null=True)
@@ -368,6 +373,8 @@ class ServiceNotification(models.Model):
 
     def __str__(self):
         return  self.getMessage()
+
+
 class FavouriteService(models.Model):
     user_id=models.IntegerField()
     servicemap_id=models.IntegerField()
@@ -404,6 +411,7 @@ class ItemRequest(models.Model):
     item_map_id = models.IntegerField()
     item_map_ref = models.ForeignKey(ItemMap, on_delete=models.CASCADE)
     item_quantity=models.IntegerField(default=1)
+    read=models.BooleanField(default=False)
 
 
 
@@ -454,7 +462,7 @@ class ItemOrderHistory(models.Model):
     confirmation_id = models.CharField(null=True, blank=True, max_length=500)
     request_type=models.CharField(blank=True, null=True, default="PRODUCT",max_length=10)
     review_written = models.BooleanField(default=False)
-    service_status = models.IntegerField(default=1)
+    item_status = models.IntegerField(default=1)
 
     paid = models.BooleanField(default=False)
     payment_state = models.CharField(max_length=40, null=True, blank=True)

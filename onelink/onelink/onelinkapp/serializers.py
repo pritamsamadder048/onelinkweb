@@ -67,7 +67,7 @@ class ServiceSubCategorySerializer(serializers.ModelSerializer):
 class ServiceMapSerializer(serializers.ModelSerializer):
     class Meta:
         model=ServiceMap
-        fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode','servicemap_image')
+        fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode','servicemap_image',"service_type")
 
 
 class ItemMapSerializer(serializers.ModelSerializer):

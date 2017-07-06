@@ -593,7 +593,7 @@ class Login(APIView):
                 if (us):
                     print("sessionfound")
                     try:
-                        del request.session['username']
+                        del request.session['user_session_key']
                     except:
                         pass
                     try:
@@ -602,7 +602,7 @@ class Login(APIView):
                         pass
             except UserSession.DoesNotExist:
                 try:
-                    del request.session['username']
+                    del request.session['user_session_key']
                 except:
                     pass
                 pass
@@ -962,6 +962,7 @@ class RegisterService(APIView):
                                 sm.areapincode=registerservice_data['areapincode']
                                 if(registerservice_data.get("servicemap_image",None) is not None):
                                     sm.servicemap_image=registerservice_data["servicemap_image"]
+                                sm.service_type="SERVICE"
 
                                 sm.save()
 
@@ -1348,6 +1349,8 @@ class GetMyServices(APIView):
             print("in outer except : ",responsedata)
             return Response(responsedata)
 
+
+
 class GetMySingleService(APIView):
 
     def post(self, request):
@@ -1389,8 +1392,7 @@ class GetMySingleService(APIView):
                                     return Response(ssm.data)
 
                                 else:
-                                    responsedata = {"successstatus": "error",
-                                                    "message": "No Services Available"}
+                                    responsedata = {"successstatus": "error","message": "No Services Available"}
                                     print(responsedata)
                                     return Response(responsedata)
 
@@ -1439,6 +1441,7 @@ class GetMyRequests(APIView):
 
         responsedata = {}
         getservice_data = {}
+        xssr=[]
 
         try:
 
@@ -1470,6 +1473,116 @@ class GetMyRequests(APIView):
                                     sr = ServiceRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
                                 else:
                                     sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+
+                                if (sr):
+                                    ssr = ServiceRequestSerializer(sr, many=True)
+
+                                    # print("sm : ",sm)
+                                    #print(ssr.data)
+                                    xssr=ssr.data
+                                    for s in range(0,len(xssr)):
+                                        tmsg=0
+                                        try:
+                                            rm=RequestMessage.objects.filter(request_id=xssr[s]["id"],receiver_id=ud.id,request_type="SERVICE").order_by("sending_time")
+                                            for r in rm:
+                                                try:
+                                                    if not r.read:
+                                                        tmsg+=1
+                                                        #print("message count ......................................................................................................................",tmsg)
+                                                except:
+                                                    print("error.......")
+                                                    #input()
+                                                    continue
+                                            xssr[s]["unread_message"]=tmsg
+                                        except Exception as e:
+                                            #print("===============================================================================error        ")
+                                            xssr[s]["unread_message"]=tmsg
+                                            #input()
+                                    print(xssr)
+
+                                    responsedata = {"successstatus": "ok", "requests": xssr}
+                                    return Response(responsedata)
+
+                                else:
+                                    responsedata = {"successstatus": "error","message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+                                    
+
+                            except ServiceRequest.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            return Response(responsedata)
+
+
+
+
+class GetMyQuickRequests(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                if(ud.user_type==0):
+                                    sr = ServiceRequest.objects.filter(serviceprovider_id=ud.id,service_type="QUICK SERVICE").order_by("-request_time")
+                                else:
+                                    sr = ServiceRequest.objects.filter(user_id=ud.id,service_type="QUICK SERVICE").order_by("-request_time")
 
                                 if (sr):
                                     ssr = ServiceRequestSerializer(sr, many=True)
@@ -1567,15 +1680,18 @@ class GetMySingleRequest(APIView):
                                 else:
                                     sr = ServiceRequest.objects.get(user_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
 
-                                if (getservice_data.get("notification_id", None) is not None):
-                                    try:
-                                        sn = ServiceNotification.objects.get(id=int(getservice_data["notification_id"]))
-                                        sn.read = True
-                                        sn.save()
-                                    except:
-                                        pass
+                                # if (getservice_data.get("notification_id", None) is not None):
+                                #     try:
+                                #         sn = ServiceNotification.objects.get(id=int(getservice_data["notification_id"]))
+                                #         sn.read = True
+                                #         sn.save()
+                                #     except:
+                                #         pass
 
                                 if (sr):
+                                    if(not sr.read and ud.user_type==0):
+                                        sr.read=True
+                                        sr.save()
                                     ssr = ServiceRequestSerializer(sr)
                                     tdata=ssr.data
                                     # try:
@@ -1588,6 +1704,22 @@ class GetMySingleRequest(APIView):
                                     tdata["user_name"]=sr.user_ref.full_name
                                     tdata["mobile"]=sr.user_ref.mobile
                                     tdata["service_name"]=sr.service_map_ref.service_name
+
+                                    try:
+                                        rm=RequestMessage.objects.filter(request_id=sr.id,request_type=sr.request_type).order_by("sending_time")
+                                        for r in rm:
+                                            try:
+                                                if not r.read:
+                                                    r.read=True
+                                                    r.save()
+                                            except:
+                                                #print("error.......")
+                                                pass
+                                    except Exception as e:
+                                        pass
+                                        #print("Error in reqading service message : ",e)
+
+                                    #srm=RequestMessageSerializer(rm,many=True)
 
                                     # print("sm : ",sm)
                                     print("final data : ",tdata)
@@ -2118,6 +2250,8 @@ class GetMyNotifications(APIView):
         pnot=[]
         tot_servicenot=0
         tot_productnot=0
+        tot_smessagecount=0
+        tot_pmessagecount=0
 
         try:
 
@@ -2150,54 +2284,90 @@ class GetMyNotifications(APIView):
                                 sud=UserDetailSerializer(ud)
                                 #print("ud : ",ud.id).order_by("-request_time")
                                 print("getting notifications ...")
+
                                 try:
-                                    sn = ServiceNotification.objects.filter(serviceprovider_id=int(getnoti_data['id'])).order_by("-request_time")
-                                    #print("sn : ",sn)
-                                    if (sn):
+                                    if(ud.user_type==0):
+                                        sr = ServiceRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
+                                    else:
+                                        sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
 
-                                        print("sn available")
+                                    if (sr):
+                                        ssr = ServiceRequestSerializer(sr, many=True)
 
-
-
-                                        ssn = ProviderNotificationSerializer(sn, many=True)
-                                        #print("Items : ",ssn.data)
-                                        snot=ssn.data
+                                        snot=ssr.data
                                         for s in range(0,len(snot)):
 
-                                            snot[s]["requester"]=sn[s].servicerequest_ref.user_ref.full_name
-                                            snot[s]["service"]=sn[s].servicerequest_ref.service_map_ref.service_name
+                                            snot[s]["requester"]=sr[s].user_ref.full_name
+                                            snot[s]["service"]=sr[s].service_map_ref.service_name
                                             if not snot[s]["read"]:
 
                                                 tot_servicenot+=1
-                                                
+
+                                        # print("sm : ",sm)
+                                        
 
                                     else:
                                         snot=None
-                                except ServiceNotification.DoesNotExist:
+
+
+
+                                except ServiceRequest.DoesNotExist:
                                     snot=None
 
+                                
                                 try:
-                                    pn = ItemNotification.objects.filter(serviceprovider_id=int(getnoti_data['id'])).order_by("-request_time")
-                                    # print("sn : ",sn)
-                                    if (pn):
+                                    if(ud.user_type==0):
+                                        ir = ItemRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
+                                    else:
+                                        ir = ItemRequest.objects.filter(user_id=ud.id).order_by("-request_time")
 
-                                        spn = ItemNotificationSerializer(pn, many=True)
-                                        # print("Items : ",ssn.data)
-                                        pnot=spn.data
+                                    if (ir):
+                                        sir = ItemRequestSerializer(ir, many=True)
+
+                                        # print("sm : ",sm)
+                                        pnot=sir.data
                                         for s in range(0,len(pnot)):
 
-                                            pnot[s]["requester"]=pn[s].itemrequest_ref.user_ref.full_name
-                                            pnot[s]["service"]=pn[s].itemrequest_ref.item_map_ref.item_name
+                                            pnot[s]["requester"]=ir[s].user_ref.full_name
+                                            pnot[s]["service"]=ir[s].item_map_ref.item_name
                                             if not pnot[s]["read"]:
                                                 tot_productnot+=1
 
-
                                     else:
                                         pnot=None
-                                except ItemNotification.DoesNotExist:
+
+
+
+                                except ItemRequest.DoesNotExist:
                                     pnot=None
 
-                                responsedata = {"service_notification": snot,"unread_servicenotification":tot_servicenot, "product_notification": pnot,"unread_productnotification":tot_productnot,"successstatus": "ok"}
+                                try:
+                                    rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="SERVICE").order_by("sending_time")
+                                    for r in rm:
+                                        try:
+                                            if(not r.read):
+                                                tot_smessagecount+=1
+                                        except:
+                                            continue
+                                    del(rm)
+                                except:
+                                    pass
+
+                                try:
+                                    rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="PRODUCT").order_by("sending_time")
+                                    for r in rm:
+                                        try:
+                                            if(not r.read):
+                                                tot_pmessagecount+=1
+                                        except:
+                                            continue
+                                    del(rm)
+                                except:
+                                    pass
+
+                                
+
+                                responsedata = {"unread_servicerequestmessage": tot_smessagecount,"unread_servicerequest":tot_servicenot, "unread_productrequestmessage": tot_pmessagecount,"unread_productrequest":tot_productnot,"successstatus": "ok"}
                                 print(responsedata)
                                 return Response(responsedata)
 
@@ -2309,6 +2479,7 @@ class ConfirmRequest(APIView):
                                 cr.service_request_id=sr.id
                                 cr.service_request_ref=sr
                                 cr.confirmation_id=GetConfirmationId(rtype="SER",rid=sr.id)
+                                cr.service_type=sr.service_type
 
                                 cr.save()
 
@@ -2623,6 +2794,7 @@ class RequestService(APIView):
 
             if(requestdata.get("request_image",None) is not None):
                 sr.request_image=requestdata["request_image"]
+            sr.service_type="SERVICE"
 
             sr.save()
 
@@ -2634,6 +2806,7 @@ class RequestService(APIView):
             sn.read=False
             #sn.save()
             sn.notification = sn.getMessage()
+            sn.service_type="SERVICE"
             sn.save()
 
 
@@ -2744,6 +2917,7 @@ class RequestQuickService(APIView):
                 sr.service_request_address=service_request_address
                 sr.request_detail=requestdata['request_detail']
                 sr.notification = sr.getMessage()
+                sr.service_type = "QUICK SERVICE"
 
                 sr.save()
 
@@ -2755,6 +2929,7 @@ class RequestQuickService(APIView):
                 sn.read=False
                 #sn.save()
                 sn.notification = sn.getMessage()
+                sn.service_type="QUICK SERVICE"
                 sn.save()
 
 
@@ -2810,7 +2985,7 @@ class RequestQuickService(APIView):
 
 
 
-class UpdateServiceStatus(APIView):
+class UpdateStatus(APIView):
     def post(self,request):
 
         responsedata = {}
@@ -2822,7 +2997,8 @@ class UpdateServiceStatus(APIView):
 
             print(requestdata)
 
-            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['servicehistory_id']) or (not requestdata["status_id"])):
+            if ((not requestdata['id']) or (not requestdata['user_session_key']) or (not requestdata['history_id']) or (not requestdata['history_type'])  or (not requestdata["status_id"])):
+                
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -2843,23 +3019,36 @@ class UpdateServiceStatus(APIView):
                         ud = UserDetail.objects.get(id=us.UserDetail_id)
                         if (ud and ud.user_type==0):
                             try:
-                                ir=OrderHistory.objects.get(id=int(requestdata["servicehistory_id"]),serviceprovider_id=ud.id)
+                                if(requestdata['history_type'].upper()=="SERVICE"):
+                                    ir=OrderHistory.objects.get(id=int(requestdata["history_id"]),serviceprovider_id=ud.id)
 
 
-                                if(ir.service_status>int(requestdata["status_id"]) and int(requestdata["status_id"])!=3 ):
+                                    if(ir.service_status>int(requestdata["status_id"]) and int(requestdata["status_id"])!=3 ):
 
-                                    responsedata={"successstatus":"error","message":"you can not change to previous status"}
-                                    print(responsedata)
-                                    return  Response(responsedata)
-                                ir.service_status=int(requestdata["status_id"])
-                                ir.save()
+                                        responsedata={"successstatus":"error","message":"you can not change to previous status"}
+                                        print(responsedata)
+                                        return  Response(responsedata)
+                                    ir.service_status=int(requestdata["status_id"])
+                                    ir.save()
 
-                                sr=ServiceRequest.objects.get(id=ir.service_map_id)
-                                sr.save()
+                                    sr=ServiceRequest.objects.get(id=ir.service_map_id)
+                                    sr.service_status=int(requestdata["status_id"])
+                                    sr.save()
+                                if(requestdata['history_type'].upper()=="PRODUCT"):
+                                    ir=ItemOrderHistory.objects.get(id=int(requestdata["history_id"]),serviceprovider_id=ud.id)
 
 
+                                    if(ir.item_status>int(requestdata["status_id"]) and int(requestdata["status_id"])!=3 ):
 
-                                sr.save()
+                                        responsedata={"successstatus":"error","message":"you can not change to previous state"}
+                                        print(responsedata)
+                                        return  Response(responsedata)
+                                    ir.item_status=int(requestdata["status_id"])
+                                    ir.save()
+
+                                    sr=ItemRequest.objects.get(id=ir.item_map_id)
+                                    sr.item_status=int(requestdata["status_id"])
+                                    sr.save()
 
                                 responsedata={"successstatus":"ok","message":"status updated successfully"}
                                 print(responsedata)
@@ -2871,6 +3060,15 @@ class UpdateServiceStatus(APIView):
                                 return  Response(responsedata)
 
                             except ServiceRequest.DoesNotExist:
+                                responsedata={"successstatus":"error","messsage":'No Service availabe for you with given details'}
+                                print(responsedata)
+                                return  Response(responsedata)
+                            except ItemOrderHistory.DoesNotExist:
+                                responsedata={"successstatus":"error","messsage":'No History availabe for you with given details'}
+                                print(responsedata)
+                                return  Response(responsedata)
+
+                            except ItemRequest.DoesNotExist:
                                 responsedata={"successstatus":"error","messsage":'No Service availabe for you with given details'}
                                 print(responsedata)
                                 return  Response(responsedata)
@@ -3650,6 +3848,7 @@ class GetMyItemRequests(APIView):
 
         responsedata = {}
         request_data = {}
+        xssr=[]
 
         try:
 
@@ -3686,8 +3885,24 @@ class GetMyItemRequests(APIView):
                                     ssr = ItemRequestSerializer(sr, many=True)
 
                                     # print("sm : ",sm)
-                                    print(ssr.data)
-                                    responsedata={"successstatus":"ok","requests":ssr.data}
+                                    #print(ssr.data)
+                                    xssr=ssr.data
+                                    for s in range(0,len(xssr)):
+                                        tmsg=0
+                                        try:
+                                            rm=RequestMessage.objects.filter(request_id=xssr[s]["id"],receiver_id=ud.id,request_type="PRODUCT").order_by("sending_time")
+                                            for r in rm:
+                                                try:
+                                                    if not r.read:
+                                                        tmsg+=1
+                                                except:
+                                                    print("error.......")
+                                                    continue
+                                            xssr[s]["unread_message"]=tmsg
+                                        except Exception as e:
+                                            xssr[s]["unread_message"]=tmsg
+                                    print(xssr)
+                                    responsedata={"successstatus":"ok","requests":xssr}
                                     return Response(responsedata)
 
                                 else:
@@ -3697,7 +3912,7 @@ class GetMyItemRequests(APIView):
 
 
 
-                            except ServiceMap.DoesNotExist:
+                            except ItemRequest.DoesNotExist:
                                 responsedata = {"successstatus": "error", "message": "No request Available"}
                                 print(responsedata)
                                 return Response(responsedata)
@@ -3781,15 +3996,18 @@ class GetMySingleItemRequest(APIView):
                                 else:
                                     sr = ItemRequest.objects.get(user_id=ud.id,id=int(request_data['request_id']))#.order_by("-request_time")
 
-                                if(request_data.get("notification_id",None) is not None):
-                                    try:
-                                        pn=ItemNotification.objects.get(id=int(request_data["notification_id"]))
-                                        pn.read=True
-                                        pn.save()
-                                    except:
-                                        pass
+                                # if(request_data.get("notification_id",None) is not None):
+                                #     try:
+                                #         pn=ItemNotification.objects.get(id=int(request_data["notification_id"]))
+                                #         pn.read=True
+                                #         pn.save()
+                                #     except:
+                                #         pass
 
                                 if (sr):
+                                    if(not sr.read  and ud.user_type==0):
+                                        sr.read=True
+                                        sr.save()
                                     ssr = ItemRequestSerializer(sr)
                                     tdata=ssr.data
                                     # try:
@@ -3802,6 +4020,20 @@ class GetMySingleItemRequest(APIView):
                                     tdata["user_name"]=sr.user_ref.full_name
                                     tdata["mobile"]=sr.user_ref.mobile
                                     tdata["item_name"]=sr.item_map_ref.item_name
+
+
+                                    try:
+                                        rm=RequestMessage.objects.filter(request_id=sr.id,request_type=sr.request_type).order_by("sending_time")
+                                        for r in rm:
+                                            try:
+                                                if (not r.read):
+                                                    r.read=True
+                                                    r.save()
+                                            except:
+                                                continue
+                                    except Exception as e:
+                                        pass
+                                        #print("Error in reqading item message : ",e)
 
                                     # print("sm : ",sm)
                                     print("final data : ",tdata)
@@ -4453,8 +4685,16 @@ class GetMySingleItemHistory(APIView):
 
                                 scr=ItemOrderHistorySerializer(cr)
 
+                                tdata=scr.data
+                                tdata["user_name"]=cr.user_ref.full_name
+                                tdata["provider_name"]=cr.serviceprovider_ref.full_name
+                                #tdata["item_detail"]=cr.item_request_ref.item_map_ref.item_details
+                                tdata["item_name"]=cr.item_request_ref.item_map_ref.item_name
 
-                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                responsedata = {"successstatus": "ok", "history":tdata}
+
+
+                                responsedata = {"successstatus": "ok", "history":tdata}
                                 print(responsedata)
                                 return Response(responsedata)
 
@@ -4537,11 +4777,17 @@ class GetMySingleHistory(APIView):
                                 if(ud.user_type==0):
                                     cr = OrderHistory.objects.get(serviceprovider_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
                                 else:
-                                    cr = OrderHistory.objects.filter(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
+                                    cr = OrderHistory.objects.get(user_id=ud.id,id=int(requestdata['history_id']))#.order_by("-booked_time")
 
                                 scr=OrderHistorySerializer(cr)
 
-                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                tdata=scr.data
+                                tdata["user_name"]=cr.user_ref.full_name
+                                tdata["provider_name"]=cr.serviceprovider_ref.full_name
+                                tdata["userrequest_detail"]=cr.service_request_ref.request_detail
+                                tdata["service_name"]=cr.service_request_ref.service_map_ref.service_name
+
+                                responsedata = {"successstatus": "ok", "history":tdata}
                                 print(responsedata)
                                 return Response(responsedata)
 
