@@ -46,9 +46,14 @@ from onelink import settings
 from .models import Stock
 from .serializers import StockSerializer
 
+def do_nothing(*args):
+    pass
+
+DEBUG=True
 
 
-
+if not DEBUG:
+    print=do_nothing
 
 
 
@@ -1546,6 +1551,116 @@ class GetMyRequests(APIView):
 
 
 
+
+class GetMyRequestsP(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        getservice_data = {}
+        xssr=[]
+
+        try:
+
+            for key in request.POST:
+                getservice_data[key] = request.POST[key].strip()
+
+            if ((not getservice_data['id']) or (not getservice_data['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get services data : ", getservice_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                if(ud.user_type==0):
+                                    sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+                                else:
+                                    sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+
+                                if (sr):
+                                    ssr = ServiceRequestSerializer(sr, many=True)
+
+                                    # print("sm : ",sm)
+                                    #print(ssr.data)
+                                    xssr=ssr.data
+                                    for s in range(0,len(xssr)):
+                                        tmsg=0
+                                        try:
+                                            rm=RequestMessage.objects.filter(request_id=xssr[s]["id"],receiver_id=ud.id,request_type="SERVICE").order_by("sending_time")
+                                            for r in rm:
+                                                try:
+                                                    if not r.read:
+                                                        tmsg+=1
+                                                        #print("message count ......................................................................................................................",tmsg)
+                                                except:
+                                                    print("error.......")
+                                                    #input()
+                                                    continue
+                                            xssr[s]["unread_message"]=tmsg
+                                        except Exception as e:
+                                            #print("===============================================================================error        ")
+                                            xssr[s]["unread_message"]=tmsg
+                                            #input()
+                                    print(xssr)
+
+                                    responsedata = {"successstatus": "ok", "requests": xssr}
+                                    return Response(responsedata)
+
+                                else:
+                                    responsedata = {"successstatus": "error","message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+                                    
+
+                            except ServiceRequest.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            return Response(responsedata)
+
+
 class GetMyQuickRequests(APIView):
 
     def post(self, request):
@@ -1676,9 +1791,9 @@ class GetMySingleRequest(APIView):
                                 print("ud id : ", ud.id)
                                 print("request id : ", getservice_data['request_id'])
                                 if (ud.user_type == 0):
-                                    sr = ServiceRequest.objects.get(serviceprovider_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                    sr = ServiceRequest.objects.get(id=int(getservice_data['request_id']))#,serviceprovider_id=ud.id)#.order_by("-request_time")
                                 else:
-                                    sr = ServiceRequest.objects.get(user_id=ud.id,id=int(getservice_data['request_id']))#.order_by("-request_time")
+                                    sr = ServiceRequest.objects.get(id=int(getservice_data['request_id']))#,user_id=ud.id)#.order_by("-request_time")
 
                                 # if (getservice_data.get("notification_id", None) is not None):
                                 #     try:
@@ -1798,15 +1913,15 @@ class AddItem(APIView):
             print("add item data : ",additem_data)
 
 
-            if((not additem_data['serviceprovider_id']) or (not additem_data['user_session_key'])  or (not additem_data['item_name']) or (not additem_data['item_details']) or (not additem_data['item_category_id'])      or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
+            if((not additem_data['serviceprovider_id']) or (not additem_data['user_session_key'])   or (not additem_data['item_details']) or (not additem_data['item_category_id'])      or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
 
-            if request.FILES.get("item_image",None) is not None:
-                additem_data['item_image']=request.FILES['item_image']
-            else:
-                additem_data["item_image"]=None
+            # if request.FILES.get("item_image",None) is not None:
+            #     additem_data['item_image']=request.FILES['item_image']
+            # else:
+            #     additem_data["item_image"]=None
             print("Register service data : ",additem_data)
 
             if (request.session.has_key('user_session_key')):
@@ -1842,8 +1957,7 @@ class AddItem(APIView):
                                 im.serviceprovider_email=ud.email
                                 im.product_category_id=int(additem_data['item_category_id'])
                                 im.product_ref=sc
-                                if  additem_data.get('item_image',None) is not None:
-                                    im.item_image=additem_data['item_image']
+
                                 #im.areapincode=additem_data['areapincode']
                                 im.item_features=additem_data['item_features']
                                 im.item_MRP=additem_data['item_MRP']
@@ -1860,11 +1974,22 @@ class AddItem(APIView):
                                     im.itemmap_image4 = additem_data["itemmap_image4"]
                                 if (additem_data.get("itemmap_image5", None) is not None):
                                     im.itemmap_image5 = additem_data["itemmap_image5"]
+                                
+                                if request.FILES.get("item_image1",None) is not None:
+                                    im.item_image1=request.FILES['item_image1']
+                                if request.FILES.get("item_image2",None) is not None:
+                                    im.item_image2=request.FILES['item_image2']
+                                if request.FILES.get("item_image3",None) is not None:
+                                    im.item_image3=request.FILES['item_image3']
+                                if request.FILES.get("item_image4",None) is not None:
+                                    im.item_image4=request.FILES['item_image4']
+                                if request.FILES.get("item_image5",None) is not None:
+                                    im.item_image5=request.FILES['item_image5']
 
 
                                 im.save()
 
-                                responsedata={"successstatus":"ok","message":"item successfully added"}
+                                responsedata={"successstatus":"ok","message":"item successfully added","item_id":im.id}
                                 return  Response(responsedata)
 
 
@@ -1995,6 +2120,18 @@ class UpdateItem(APIView):
                                     im.itemmap_image4 = updateitem_data["itemmap_image4"]
                                 if (updateitem_data.get("itemmap_image5", None) is not None):
                                     im.itemmap_image5 = updateitem_data["itemmap_image5"]
+
+
+                                if request.FILES.get("item_image1",None) is not None:
+                                    im.item_image1=request.FILES['item_image1']
+                                if request.FILES.get("item_image2",None) is not None:
+                                    im.item_image2=request.FILES['item_image2']
+                                if request.FILES.get("item_image3",None) is not None:
+                                    im.item_image3=request.FILES['item_image3']
+                                if request.FILES.get("item_image4",None) is not None:
+                                    im.item_image4=request.FILES['item_image4']
+                                if request.FILES.get("item_image5",None) is not None:
+                                    im.item_image5=request.FILES['item_image5']
 
                                 im.save()
 
@@ -3949,6 +4086,109 @@ class GetMyItemRequests(APIView):
 
 
 
+class GetMyItemRequestsP(APIView):
+
+    def post(self, request):
+
+        responsedata = {}
+        request_data = {}
+        xssr=[]
+
+        try:
+
+            for key in request.POST:
+                request_data[key] = request.POST[key].strip()
+
+            if ((not request_data['id']) or (not request_data['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get item request data : ", request_data)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+                                if(ud.user_type==0):
+                                    sr = ItemRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+                                else:
+                                    sr = ItemRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+
+                                if (sr):
+                                    ssr = ItemRequestSerializer(sr, many=True)
+
+                                    # print("sm : ",sm)
+                                    #print(ssr.data)
+                                    xssr=ssr.data
+                                    for s in range(0,len(xssr)):
+                                        tmsg=0
+                                        try:
+                                            rm=RequestMessage.objects.filter(request_id=xssr[s]["id"],receiver_id=ud.id,request_type="PRODUCT").order_by("sending_time")
+                                            for r in rm:
+                                                try:
+                                                    if not r.read:
+                                                        tmsg+=1
+                                                except:
+                                                    print("error.......")
+                                                    continue
+                                            xssr[s]["unread_message"]=tmsg
+                                        except Exception as e:
+                                            xssr[s]["unread_message"]=tmsg
+                                    print(xssr)
+                                    responsedata={"successstatus":"ok","requests":xssr}
+                                    return Response(responsedata)
+
+                                else:
+                                    responsedata = {"successstatus": "error","message": "No request Available"}
+                                    print(responsedata)
+                                    return Response(responsedata)
+
+
+
+                            except ItemRequest.DoesNotExist:
+                                responsedata = {"successstatus": "error", "message": "No request Available"}
+                                print(responsedata)
+                                return Response(responsedata)
+
+
+                        else:
+                            responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                            print(responsedata)
+                            return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in outer except : ", responsedata)
+            return Response(responsedata)
+
 
 
 
@@ -3992,9 +4232,9 @@ class GetMySingleItemRequest(APIView):
                                 if (ud.user_type == 0):
                                     print("ud id : ",ud.id)
                                     print("request id : ",request_data['request_id'])
-                                    sr = ItemRequest.objects.get(id=int(request_data['request_id']),serviceprovider_id=int(request_data['id']))#.order_by("-request_time")
+                                    sr = ItemRequest.objects.get(id=int(request_data['request_id']))#,serviceprovider_id=int(request_data['id']))#.order_by("-request_time")
                                 else:
-                                    sr = ItemRequest.objects.get(user_id=ud.id,id=int(request_data['request_id']))#.order_by("-request_time")
+                                    sr = ItemRequest.objects.get(id=int(request_data['request_id']))#,user_id=ud.id)#.order_by("-request_time")
 
                                 # if(request_data.get("notification_id",None) is not None):
                                 #     try:
@@ -4112,7 +4352,7 @@ class SendMessage(APIView):
 
             print("obtained request service data : ",requestdata)
 
-            if ( (not requestdata["receiver_id"]) or (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key']) or (not requestdata['request_type']) or (not requestdata["message"]) ) :
+            if ( (not requestdata["receiver_id"]) or (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key']) or (not requestdata['request_type']) or (not requestdata["message"]) or (not requestdata["message_type"]) ) :
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}
                 print(responsedata)
                 return Response(responsedata)
@@ -4150,6 +4390,7 @@ class SendMessage(APIView):
             rm.receiver_ref=sd
             rm.request_id=r.id
             rm.request_type=requestdata['request_type'].upper()
+            rm.message_type=requestdata['message_type'].upper()
             if(rm.request_type=="SERVICE"):
                 rm.servicerequest_ref=r
             elif(rm.request_type=="PRODUCT"):
@@ -4392,6 +4633,76 @@ class WriteReview(APIView):
             rv.comment=requestdata["comment"]
 
             rv.save()
+
+            # if(rv.review_type=="SERVICE"):
+            #     try:
+            #         arv=Review.objects.filter(map_id=rv.map_id,review_type=rv.review_type)
+            #         tot_review=len(arv)
+            #         tot_ratings=0
+            #         avg_ratings=0.0
+            #         for(r in arv):
+            #             tot_ratings+=r.service_star+r.quality_star+r.value_star
+            #         avg_ratings=tot_ratings/3
+            #         avg_ratings=avg_ratings/tot_review
+            #         f=int(avg_ratings)+0.5
+            #         if((avg_ratings>int(avg_ratings)) and (avg_ratings<=f)):
+            #             m.ratings=f
+            #         elif(avg_ratings>f):
+            #             m.ratings=math.cein(f)
+            #         else:
+            #             m.ratings=math.floor(f)
+
+            #         m.save()
+
+            #     except:
+            #         pass
+            # if(rv.review_type=="PRODUCT"):
+            #     try:
+            #         arv=Review.objects.filter(map_id=rv.map_id,review_type=rv.review_type)
+            #         tot_review=len(arv)
+            #         tot_ratings=0
+            #         avg_ratings=0.0
+            #         for(r in arv):
+            #             tot_ratings+=r.service_star+r.quality_star+r.value_star
+            #         avg_ratings=tot_ratings/3
+            #         avg_ratings=avg_ratings/tot_review
+            #         f=int(avg_ratings)+0.5
+            #         if((avg_ratings>int(avg_ratings)) and (avg_ratings<=f)):
+            #             m.ratings=f
+            #         elif(avg_ratings>f):
+            #             m.ratings=math.cein(f)
+            #         else:
+            #             m.ratings=math.floor(f)
+
+            #         m.save()
+
+            #     except:
+            #         pass
+
+            try:
+                arv=Review.objects.filter(map_id=rv.map_id,review_type=rv.review_type)
+                tot_review=len(arv)
+                m.reviews=tot_review
+                tot_ratings=0
+                avg_ratings=0.0
+                for r in arv:
+                    tot_ratings+=r.service_star+r.quality_star+r.value_star
+                avg_ratings=tot_ratings/3
+                avg_ratings=avg_ratings/tot_review
+                f=int(avg_ratings)+0.5
+                if((avg_ratings>int(avg_ratings)) and (avg_ratings<=f)):
+                    m.ratings=f
+                elif(avg_ratings>f):
+                    m.ratings=math.cein(f)
+                else:
+                    m.ratings=math.floor(f)
+
+                m.save()
+
+            except:
+                pass
+
+
 
             h.review_written = True
             h.save()

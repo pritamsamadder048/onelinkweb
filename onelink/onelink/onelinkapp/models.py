@@ -153,7 +153,10 @@ def service_image_upload_location(instance,filename):
 class ServiceCategory(models.Model):
 
     service_name = models.CharField(max_length=500)
-    service_detail = models.TextField()
+    service_detail = models.TextField(blank=True,null=True)
+
+    service_name_ch = models.CharField(max_length=500,blank=True,null=True)
+    service_detail_ch = models.TextField(blank=True,null=True)
 
 
     service_image=models.ImageField(upload_to=service_image_upload_location,
@@ -178,7 +181,10 @@ def product_image_upload_location(instance,filename):
 class ProductCategory(models.Model):
 
     product_name = models.CharField(max_length=500)
-    product_detail = models.TextField()
+    product_detail = models.TextField(blank=True,null=True)
+
+    product_name_ch = models.CharField(max_length=500,blank=True,null=True)
+    product_detail_ch = models.TextField(blank=True,null=True)
 
 
     product_image=models.ImageField(upload_to=product_image_upload_location,
@@ -231,6 +237,8 @@ class ServiceMap(models.Model):
     areapincode=models.CharField(max_length=10)
     register_time=models.DateTimeField(auto_now_add=True,blank=True,null=True)
     service_type=models.CharField(max_length=40,null=True,blank=True)
+    ratings=models.FloatField(default=0.0)
+    reviews=models.IntegerField(default=0)
 
 
 
@@ -255,14 +263,50 @@ class ItemMap(models.Model):
     item_details=models.TextField()
     item_features=models.TextField(blank=True,null=True)
     #areapincode = models.PositiveIntegerField()
-    # item_image = models.ImageField(upload_to=item_image_upload_location,
-    #                                   null=True,
-    #                                   blank=True,
-    #                                   height_field="height_field",
-    #                                   width_field="width_field")
-    #
-    # height_field = models.IntegerField(default=0)
-    # width_field = models.IntegerField(default=0)
+    item_image1 = models.ImageField(upload_to=item_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field1",
+                                      width_field="width_field1")
+    
+    height_field1 = models.IntegerField(default=0)
+    width_field1 = models.IntegerField(default=0)
+
+    item_image2 = models.ImageField(upload_to=item_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field2",
+                                      width_field="width_field2")
+    
+    height_field2 = models.IntegerField(default=0)
+    width_field2 = models.IntegerField(default=0)
+
+    item_image3 = models.ImageField(upload_to=item_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field3",
+                                      width_field="width_field3")
+    
+    height_field3 = models.IntegerField(default=0)
+    width_field3 = models.IntegerField(default=0)
+
+    item_image4 = models.ImageField(upload_to=item_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field4",
+                                      width_field="width_field4")
+    
+    height_field4 = models.IntegerField(default=0)
+    width_field4 = models.IntegerField(default=0)
+
+    item_image5 = models.ImageField(upload_to=item_image_upload_location,
+                                      null=True,
+                                      blank=True,
+                                      height_field="height_field5",
+                                      width_field="width_field5")
+    
+    height_field5 = models.IntegerField(default=0)
+    width_field5 = models.IntegerField(default=0)
 
 
 
@@ -274,6 +318,8 @@ class ItemMap(models.Model):
     itemmap_image3=models.TextField(null=True,blank=True)
     itemmap_image4=models.TextField(null=True,blank=True)
     itemmap_image5=models.TextField(null=True,blank=True)
+    ratings=models.FloatField(default=0.0)
+    reviews=models.IntegerField(default=0)
 
     def __str__(self):
         return self.item_name
@@ -517,6 +563,7 @@ class RequestMessage(models.Model):
     message_text=models.TextField()
     request_type=models.CharField(max_length=10)
     read=models.BooleanField(default=False)
+    message_type=models.CharField(max_length=10)
 
     def __str__(self):
         return "Sender : "+self.sender_ref.full_name+"   Receiver : "+self.receiver_ref.full_name
@@ -546,3 +593,13 @@ class Review(models.Model):
     itemhistory_ref = models.ForeignKey(ItemOrderHistory, related_name='reviewitemhistory', on_delete=models.CASCADE,null=True, blank=True)
     review_type=models.CharField(max_length=40)#,null=True,blank=True)
     review_time=models.DateTimeField(auto_now_add=True)
+    def __str__(self):
+        if(self.review_type=="PRODUCT"):
+
+            return "review for "+self.provider_ref.full_name+"'s "+self.review_type+" : "+self.itemmap_ref.item_name
+        else:
+            return "review for "+self.provider_ref.full_name+"'s "+self.review_type+" : "+self.servicemap_ref.service_name
+
+
+
+

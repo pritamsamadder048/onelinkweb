@@ -49,9 +49,11 @@ urlpatterns = [
 
 
     url(r'^getmyrequests/$', views.GetMyRequests.as_view(),name="getmyrequests"),
+    url(r'^getmyrequestsp/$', views.GetMyRequestsP.as_view(),name="getmyrequestsp"),
     url(r'^getmyquickrequests/$', views.GetMyQuickRequests.as_view(),name="getmyquickrequests"),
     url(r'^getmysinglerequest/$', views.GetMySingleRequest.as_view(),name="getmysinglerequest"),
     url(r'^getmyitemrequests/$', views.GetMyItemRequests.as_view(),name="getmyitemrequests"),
+    url(r'^getmyitemrequestsp/$', views.GetMyItemRequestsP.as_view(),name="getmyitemrequestsp"),
     url(r'^getmysingleitemrequest/$', views.GetMySingleItemRequest.as_view(),name="getmysingleitemrequest"),
 
 

@@ -43,7 +43,7 @@ class ServiceCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model=ServiceCategory
-        fields=('id','service_name','service_detail','service_image')
+        fields="__all__"#('id','service_name','service_detail','service_image')
 
 
 
@@ -53,7 +53,7 @@ class ProductCategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model=ProductCategory
-        fields=('id','product_name','product_detail','product_image')
+        fields="__all__"#('id','product_name','product_detail','product_image')
 
 
 
@@ -67,7 +67,7 @@ class ServiceSubCategorySerializer(serializers.ModelSerializer):
 class ServiceMapSerializer(serializers.ModelSerializer):
     class Meta:
         model=ServiceMap
-        fields=('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode','servicemap_image',"service_type")
+        fields="__all__"#('id','serviceprovider_id',"license_no","under_gov",'service_name',"service_details", 'serviceprovider_email','service_category_id','areapincode','servicemap_image',"service_type","ratings")
 
 
 class ItemMapSerializer(serializers.ModelSerializer):
