@@ -27,7 +27,7 @@ urlpatterns = [
 
 
 
-    url(r'^stock/$', views.StockList.as_view(),name="stocklist"),
+    # url(r'^stock/$', views.StockList.as_view(),name="stocklist"),
 
     url(r'^registeruser/$', views.RegisterUser.as_view(),name="registeruser"),
     url(r'^updateuser/$', views.UpdateUser.as_view(),name="updateuser"),

@@ -37,7 +37,8 @@ import math
 from onelink.settings import GMAIL_DETAIL
 from .models import generate_hash
 from onelink import settings
-
+from base64 import b64decode
+from django.core.files.base import ContentFile
 
 
 
@@ -1911,6 +1912,7 @@ class AddItem(APIView):
                 additem_data[key] = request.POST[key].strip()
 
             print("add item data : ",additem_data)
+            print("request files : ",request.FILES)
 
 
             if((not additem_data['serviceprovider_id']) or (not additem_data['user_session_key'])   or (not additem_data['item_details']) or (not additem_data['item_category_id'])      or (not additem_data['item_MRP'])  or (not additem_data['item_SLP'])  or (not additem_data['item_features']) ):
@@ -1932,6 +1934,7 @@ class AddItem(APIView):
 
             try:
                 us = UserSession.objects.get(UserSession_key=sesskey)
+                print("got a user of type : ",us.User_Type)
                 if (us.User_Type==0):
                     print("correct user")
 
@@ -1964,32 +1967,55 @@ class AddItem(APIView):
                                 im.item_SLP=additem_data['item_SLP']
                                 im.mobile=ud.mobile
 
+                                # if(additem_data.get("itemmap_image1",None) is not None):
+                                #     im.itemmap_image1=additem_data["itemmap_image1"]
+                                # if (additem_data.get("itemmap_image2", None) is not None):
+                                #     im.itemmap_image2 = additem_data["itemmap_image2"]
+                                # if (additem_data.get("itemmap_image3", None) is not None):
+                                #     im.itemmap_image3 = additem_data["itemmap_image3"]
+                                # if (additem_data.get("itemmap_image4", None) is not None):
+                                #     im.itemmap_image4 = additem_data["itemmap_image4"]
+                                # if (additem_data.get("itemmap_image5", None) is not None):
+                                #     im.itemmap_image5 = additem_data["itemmap_image5"]
+
+
                                 if(additem_data.get("itemmap_image1",None) is not None):
-                                    im.itemmap_image1=additem_data["itemmap_image1"]
+                                    image_data = b64decode(additem_data["itemmap_image1"])
+                                    im.item_image1=ContentFile(image_data, 'itemmap_image1.png')
+                                    del(image_data)
                                 if (additem_data.get("itemmap_image2", None) is not None):
-                                    im.itemmap_image2 = additem_data["itemmap_image2"]
+                                    image_data = b64decode(additem_data["itemmap_image2"])
+                                    im.item_image2=ContentFile(image_data, 'itemmap_image2.png')
+                                    del(image_data)
                                 if (additem_data.get("itemmap_image3", None) is not None):
-                                    im.itemmap_image3 = additem_data["itemmap_image3"]
+                                    image_data = b64decode(additem_data["itemmap_image3"])
+                                    im.item_image3=ContentFile(image_data, 'itemmap_image3.png')
+                                    del(image_data)
                                 if (additem_data.get("itemmap_image4", None) is not None):
-                                    im.itemmap_image4 = additem_data["itemmap_image4"]
+                                    image_data = b64decode(additem_data["itemmap_image4"])
+                                    im.item_image4=ContentFile(image_data, 'itemmap_image4.png')
+                                    del(image_data)
                                 if (additem_data.get("itemmap_image5", None) is not None):
-                                    im.itemmap_image5 = additem_data["itemmap_image5"]
+                                    image_data = b64decode(additem_data["itemmap_image5"])
+                                    im.item_image5=ContentFile(image_data, 'itemmap_image5.png')
+                                    del(image_data)
                                 
-                                if request.FILES.get("item_image1",None) is not None:
-                                    im.item_image1=request.FILES['item_image1']
-                                if request.FILES.get("item_image2",None) is not None:
-                                    im.item_image2=request.FILES['item_image2']
-                                if request.FILES.get("item_image3",None) is not None:
-                                    im.item_image3=request.FILES['item_image3']
-                                if request.FILES.get("item_image4",None) is not None:
-                                    im.item_image4=request.FILES['item_image4']
-                                if request.FILES.get("item_image5",None) is not None:
-                                    im.item_image5=request.FILES['item_image5']
+                                # if request.FILES.get("item_image1",None) is not None:
+                                #     im.item_image1=request.FILES['item_image1']
+                                # if request.FILES.get("item_image2",None) is not None:
+                                #     im.item_image2=request.FILES['item_image2']
+                                # if request.FILES.get("item_image3",None) is not None:
+                                #     im.item_image3=request.FILES['item_image3']
+                                # if request.FILES.get("item_image4",None) is not None:
+                                #     im.item_image4=request.FILES['item_image4']
+                                # if request.FILES.get("item_image5",None) is not None:
+                                #     im.item_image5=request.FILES['item_image5']
 
 
                                 im.save()
 
                                 responsedata={"successstatus":"ok","message":"item successfully added","item_id":im.id}
+                                print(responsedata)
                                 return  Response(responsedata)
 
 
@@ -2058,6 +2084,9 @@ class UpdateItem(APIView):
 
             for key in request.POST:
                 updateitem_data[key] = request.POST[key].strip()
+            
+            print("update item data : ", updateitem_data)
+            # print("update files : ",request.FILES)
 
             if ((not updateitem_data['itemmap_id'])or (not updateitem_data['user_session_key'])  or (not updateitem_data['serviceprovider_id']) or (not updateitem_data['item_name'])  or (not updateitem_data['item_details'])   or (not updateitem_data['item_MRP']) or (not updateitem_data['item_SLP']) or (not updateitem_data['item_features'])):
                 responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
@@ -2065,7 +2094,7 @@ class UpdateItem(APIView):
                 return Response(responsedata)
 
 
-            print("Register service data : ", updateitem_data)
+            
 
             if (request.session.has_key('user_session_key')):
                 sesskey = request.session['user_session_key']
@@ -2110,28 +2139,58 @@ class UpdateItem(APIView):
                                 im.item_MRP = updateitem_data['item_MRP']
                                 im.item_SLP = updateitem_data['item_SLP']
 
-                                if (updateitem_data.get("itemmap_image1", None) is not None):
-                                    im.itemmap_image1 = updateitem_data["itemmap_image1"]
+                                 # if(additem_data.get("itemmap_image1",None) is not None):
+                                #     im.itemmap_image1=additem_data["itemmap_image1"]
+                                # if (additem_data.get("itemmap_image2", None) is not None):
+                                #     im.itemmap_image2 = additem_data["itemmap_image2"]
+                                # if (additem_data.get("itemmap_image3", None) is not None):
+                                #     im.itemmap_image3 = additem_data["itemmap_image3"]
+                                # if (additem_data.get("itemmap_image4", None) is not None):
+                                #     im.itemmap_image4 = additem_data["itemmap_image4"]
+                                # if (additem_data.get("itemmap_image5", None) is not None):
+                                #     im.itemmap_image5 = additem_data["itemmap_image5"]
+
+
+                                if(updateitem_data.get("itemmap_image1",None) is not None):
+                                    image_data1 = b64decode(updateitem_data["itemmap_image1"])
+                                    im.item_image1=ContentFile(image_data1, 'itemmap_image1.png')
+                                    # del(image_data)
+                                    print("Saving image 1.....")
+                                    im.save()
                                 if (updateitem_data.get("itemmap_image2", None) is not None):
-                                    im.itemmap_image2 = updateitem_data["itemmap_image2"]
+                                    image_data2 = b64decode(updateitem_data["itemmap_image2"])
+                                    im.item_image2=ContentFile(image_data2, 'itemmap_image2.png')
+                                    # del(image_data)
+                                    print("Saving image 2.....")
+                                    im.save()
                                 if (updateitem_data.get("itemmap_image3", None) is not None):
-                                    im.itemmap_image3 = updateitem_data["itemmap_image3"]
+                                    image_data3 = b64decode(updateitem_data["itemmap_image3"])
+                                    im.item_image3=ContentFile(image_data3, 'itemmap_image3.png')
+                                    # del(image_data)
+                                    print("Saving image 3.....")
+                                    im.save()
                                 if (updateitem_data.get("itemmap_image4", None) is not None):
-                                    im.itemmap_image4 = updateitem_data["itemmap_image4"]
+                                    image_data4 = b64decode(updateitem_data["itemmap_image4"])
+                                    im.item_image4=ContentFile(image_data4, 'itemmap_image4.png')
+                                    # del(image_data)
+                                    print("Saving image 4.....")
+                                    im.save()
                                 if (updateitem_data.get("itemmap_image5", None) is not None):
-                                    im.itemmap_image5 = updateitem_data["itemmap_image5"]
-
-
-                                if request.FILES.get("item_image1",None) is not None:
-                                    im.item_image1=request.FILES['item_image1']
-                                if request.FILES.get("item_image2",None) is not None:
-                                    im.item_image2=request.FILES['item_image2']
-                                if request.FILES.get("item_image3",None) is not None:
-                                    im.item_image3=request.FILES['item_image3']
-                                if request.FILES.get("item_image4",None) is not None:
-                                    im.item_image4=request.FILES['item_image4']
-                                if request.FILES.get("item_image5",None) is not None:
-                                    im.item_image5=request.FILES['item_image5']
+                                    image_data5 = b64decode(updateitem_data["itemmap_image5"])
+                                    im.item_image5=ContentFile(image_data5, 'itemmap_image5.png')
+                                    # del(image_data)
+                                    print("Saving image 5.....")
+                                
+                                # if request.FILES.get("item_image1",None) is not None:
+                                #     im.item_image1=request.FILES['item_image1']
+                                # if request.FILES.get("item_image2",None) is not None:
+                                #     im.item_image2=request.FILES['item_image2']
+                                # if request.FILES.get("item_image3",None) is not None:
+                                #     im.item_image3=request.FILES['item_image3']
+                                # if request.FILES.get("item_image4",None) is not None:
+                                #     im.item_image4=request.FILES['item_image4']
+                                # if request.FILES.get("item_image5",None) is not None:
+                                #     im.item_image5=request.FILES['item_image5']
 
                                 im.save()
 
@@ -2324,8 +2383,24 @@ class GetMyItems(APIView):
 
                                 if (im):
                                     sim = ItemMapSerializer(im, many=True)
+                                    tdata=sim.data
+                                    sr=im
+                                    for i in range(0,len(tdata)):
+                    
+                                        if(sr[i].item_image1):
+                                            
+                                            tdata[i]["item_image1_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image1.url
+                                        if(sr[i].item_image2):
+                                            tdata[i]["item_image2_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image2.url
+                                        if(sr[i].item_image3):
+                                            tdata[i]["item_image3_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image3.url
+                                        if(sr[i].item_image4):
+                                            tdata[i]["item_image4_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image4.url
+                                        if(sr[i].item_image5):
+                                            tdata[i]["item_image5_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image5.url
+                                        
                                     print("Items : ",sim.data)
-                                    return Response(sim.data)
+                                    return Response(tdata)
 
                                 else:
                                     responsedata = {"successstatus": "error","message": "No Item Available"}
@@ -2390,6 +2465,11 @@ class GetMyNotifications(APIView):
         tot_smessagecount=0
         tot_pmessagecount=0
 
+        ptot_servicenot=0
+        ptot_productnot=0
+        ptot_smessagecount=0
+        ptot_pmessagecount=0
+
         try:
 
             for key in request.POST:
@@ -2425,6 +2505,10 @@ class GetMyNotifications(APIView):
                                 try:
                                     if(ud.user_type==0):
                                         sr = ServiceRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
+                                        try:
+                                            psr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+                                        except:
+                                            psr=None
                                     else:
                                         sr = ServiceRequest.objects.filter(user_id=ud.id).order_by("-request_time")
 
@@ -2445,16 +2529,41 @@ class GetMyNotifications(APIView):
 
                                     else:
                                         snot=None
+                                    
+                                    
 
 
 
                                 except ServiceRequest.DoesNotExist:
                                     snot=None
+                                
+
+                                if (psr):
+                                        pssr = ServiceRequestSerializer(psr, many=True)
+
+                                        psnot=pssr.data
+                                        for s in range(0,len(psnot)):
+
+                                            psnot[s]["requester"]=psr[s].user_ref.full_name
+                                            psnot[s]["service"]=psr[s].service_map_ref.service_name
+                                            if not psnot[s]["read"]:
+
+                                                ptot_servicenot+=1
+
+                                        # print("sm : ",sm)
+                                        
+
+                                else:
+                                    psnot=None
 
                                 
                                 try:
                                     if(ud.user_type==0):
                                         ir = ItemRequest.objects.filter(serviceprovider_id=ud.id).order_by("-request_time")
+                                        try:
+                                            pir = ItemRequest.objects.filter(user_id=ud.id).order_by("-request_time")
+                                        except:
+                                            pir=None
                                     else:
                                         ir = ItemRequest.objects.filter(user_id=ud.id).order_by("-request_time")
 
@@ -2477,13 +2586,40 @@ class GetMyNotifications(APIView):
 
                                 except ItemRequest.DoesNotExist:
                                     pnot=None
+                                
+                                if (pir):
+                                        psir = ItemRequestSerializer(ir, many=True)
+
+                                        # print("sm : ",sm)
+                                        ppnot=psir.data
+                                        for s in range(0,len(ppnot)):
+
+                                            ppnot[s]["requester"]=pir[s].user_ref.full_name
+                                            ppnot[s]["service"]=pir[s].item_map_ref.item_name
+                                            if not ppnot[s]["read"]:
+                                                ptot_productnot+=1
+
+                                else:
+                                    ppnot=None
 
                                 try:
                                     rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="SERVICE").order_by("sending_time")
                                     for r in rm:
                                         try:
-                                            if(not r.read):
+                                            if((r.servicerequest_ref.serviceprovider_id==ud.id)and(not r.read)):
                                                 tot_smessagecount+=1
+                                        except:
+                                            continue
+                                    del(rm)
+                                except:
+                                    pass
+
+                                try:
+                                    rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="SERVICE").order_by("sending_time")
+                                    for r in rm:
+                                        try:
+                                            if((r.servicerequest_ref.serviceprovider_id!=ud.id)and(not r.read)):
+                                                ptot_smessagecount+=1
                                         except:
                                             continue
                                     del(rm)
@@ -2494,8 +2630,20 @@ class GetMyNotifications(APIView):
                                     rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="PRODUCT").order_by("sending_time")
                                     for r in rm:
                                         try:
-                                            if(not r.read):
+                                            if((r.itemrequest_ref.serviceprovider_id==ud.id)and(not r.read)):
                                                 tot_pmessagecount+=1
+                                        except:
+                                            continue
+                                    del(rm)
+                                except:
+                                    pass
+                                
+                                try:
+                                    rm=RequestMessage.objects.filter(receiver_id=ud.id,request_type="PRODUCT").order_by("sending_time")
+                                    for r in rm:
+                                        try:
+                                            if((r.itemrequest_ref.serviceprovider_id!=ud.id)and(not r.read)):
+                                                ptot_pmessagecount+=1
                                         except:
                                             continue
                                     del(rm)
@@ -2504,7 +2652,7 @@ class GetMyNotifications(APIView):
 
                                 
 
-                                responsedata = {"unread_servicerequestmessage": tot_smessagecount,"unread_servicerequest":tot_servicenot, "unread_productrequestmessage": tot_pmessagecount,"unread_productrequest":tot_productnot,"successstatus": "ok"}
+                                responsedata = {"unread_servicerequestmessage": tot_smessagecount,"unread_servicerequest":tot_servicenot, "unread_productrequestmessage": tot_pmessagecount,"unread_productrequest":tot_productnot,"my_unread_servicerequestmessage": ptot_smessagecount,"my_unread_servicerequest":ptot_servicenot, "my_unread_productrequestmessage": ptot_pmessagecount,"my_unread_productrequest":ptot_productnot,"successstatus": "ok"}
                                 print(responsedata)
                                 return Response(responsedata)
 
@@ -3612,11 +3760,29 @@ class GetItemByCategory(APIView):
             #     tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'item_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
             #     itemsdata.append(tmpdata)
             sim=ItemMapSerializer(im,many=True)
+
+            tdata=sim.data
+            sr=im
+
+            for i in range(0,len(tdata)):
+                
+                if(sr[i].item_image1):
+                    
+                    tdata[i]["item_image1_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image1.url
+                if(sr[i].item_image2):
+                    tdata[i]["item_image2_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image2.url
+                if(sr[i].item_image3):
+                    tdata[i]["item_image3_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image3.url
+                if(sr[i].item_image4):
+                    tdata[i]["item_image4_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image4.url
+                if(sr[i].item_image5):
+                    tdata[i]["item_image5_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr[i].item_image5.url
+                
             if(len(sim.data)<=0):
 
                 responsedata={"successstatus":"error","message":"{0} Items Found".format(len(im)),"itemdata":sim.data}
             else:
-                responsedata = {"successstatus": "ok", "message": "{0} Items Found".format(len(im)),"itemdata": sim.data}
+                responsedata = {"successstatus": "ok", "message": "{0} Items Found".format(len(im)),"itemdata": tdata}
             print(responsedata)
             return  Response(responsedata)
 
@@ -3640,6 +3806,7 @@ class GetItemByCategory(APIView):
 
 class GetItemById(APIView):
     def get(self,request,itemid):
+        
         if (not itemid) :
             print("not all data in GetItemByCategory")
             responsedata = {"successstatus": "error", "message": "please procvide all the details necessary"}
@@ -3648,12 +3815,26 @@ class GetItemById(APIView):
 
         try:
             itemsdata=[]
-            im=ItemMap.objects.get(id=int(itemid))
+
+            sr=ItemMap.objects.get(id=int(itemid))
             # for i in range(0,len(im)):
             #     tmpdata={"iteme_image":settings.BASE_IP+im[i].item_image.url,"id":im[i].id,"serviceprovider_id":im[i].serviceprovider_id,"serviceprovider_email":im[i].serviceprovider_email,'item_category_id':im[i].product_category_id,'item_name':im[i].item_name,'item_details':im[i].item_details,'item_features':im[i].item_features,'item_MRP':im[i].item_MRP,'item_SLP':im[i].item_SLP}
             #     itemsdata.append(tmpdata)
-            sim=ItemMapSerializer(im)
-            responsedata = {"successstatus": "ok","itemdata": sim.data}
+            sim=ItemMapSerializer(sr)
+            tdata=sim.data
+            if(sr.item_image1):
+                
+                tdata["item_image1_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image1.url
+            if(sr.item_image2):
+                tdata["item_image2_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image2.url
+            if(sr.item_image3):
+                tdata["item_image3_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image3.url
+            if(sr.item_image4):
+                tdata["item_image4_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image4.url
+            if(sr.item_image5):
+                tdata["item_image5_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image5.url
+
+            responsedata = {"successstatus": "ok","itemdata": tdata}
             print(responsedata)
             return  Response(responsedata)
 
@@ -4260,7 +4441,16 @@ class GetMySingleItemRequest(APIView):
                                     tdata["user_name"]=sr.user_ref.full_name
                                     tdata["mobile"]=sr.user_ref.mobile
                                     tdata["item_name"]=sr.item_map_ref.item_name
-
+                                    # if(sr.item_image1):
+                                    #     tdata["item_image1_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image1.url
+                                    # if(sr.item_image2):
+                                    #     tdata["item_image2_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image2.url
+                                    # if(sr.item_image3):
+                                    #     tdata["item_image3_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image3.url
+                                    # if(sr.item_image4):
+                                    #     tdata["item_image4_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image4.url
+                                    # if(sr.item_image5):
+                                    #     tdata["item_image5_url"]=settings.BASE_DEV_WEB_MEDIA_ADDRESS+sr.item_image5.url
 
                                     try:
                                         rm=RequestMessage.objects.filter(request_id=sr.id,request_type=sr.request_type).order_by("sending_time")
@@ -4459,7 +4649,7 @@ class GetMessages(APIView):
             for key in request.POST:
                 requestdata[key]=request.POST[key]
 
-            print("obtained request service data : ",requestdata)
+            print("obtained request data : ",requestdata)
 
             if ( (not requestdata["user_id"]) or (not requestdata["request_id"]) or (not requestdata['user_session_key'])  or (not requestdata['request_type']) ) :
                 responsedata={"successstatus":"error","message":"please provide all the details necessary"}

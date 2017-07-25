@@ -7,7 +7,7 @@ from .models import Stock
 from .models import ServiceCategory
 from .models import ProductCategory
 from .models import ServiceSubCategory
-from  .models import ServiceMap
+from .models import ServiceMap
 from .models import ItemMap
 from .models import ServiceRequest
 from .models import ServiceNotification
