@@ -2588,11 +2588,13 @@ class GetMyNotifications(APIView):
                                     pnot=None
                                 
                                 if (pir):
-                                        psir = ItemRequestSerializer(ir, many=True)
+                                        psir = ItemRequestSerializer(pir, many=True)
 
                                         # print("sm : ",sm)
                                         ppnot=psir.data
                                         for s in range(0,len(ppnot)):
+                                            
+                                            print("s is : ",s," ppnot is : ",len(ppnot)," pir is : ",len(pir))
 
                                             ppnot[s]["requester"]=pir[s].user_ref.full_name
                                             ppnot[s]["service"]=pir[s].item_map_ref.item_name
@@ -2897,6 +2899,94 @@ class GetMyHistory(APIView):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(True, exc_type, fname, exc_tb.tb_lineno)
             return Response(responsedata)
+
+
+class GetMyHistoryP(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print(requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                if(ud.user_type==0):
+                                    cr = OrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+                                else:
+                                    cr = OrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+
+                                scr=OrderHistorySerializer(cr,many=True)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
 
 
 ##############################################################################################################################
@@ -5143,6 +5233,95 @@ class GetMyItemHistory(APIView):
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(True, exc_type, fname, exc_tb.tb_lineno)
             return Response(responsedata)
+
+
+class GetMyItemHistoryP(APIView):
+    def post(self,request):
+        responsedata = {}
+        requestdata = {}
+        try:
+
+            for key in request.POST:
+                requestdata[key] = request.POST[key].strip()
+
+            print("GetMyItemHistoryP : ",requestdata)
+
+            if ((not requestdata['id']) or (not requestdata['user_session_key'])):
+                responsedata = {"successstatus": "error", "message": "please provide all the details necessary"}
+                print(responsedata)
+                return Response(responsedata)
+
+            print("get items data : ", requestdata)
+
+            if (request.session.has_key('user_session_key')):
+                sesskey = request.session['user_session_key']
+            else:
+                sesskey = request.POST['user_session_key']
+
+            try:
+                us = UserSession.objects.get(UserSession_key=sesskey)
+                if (us):
+
+                    try:
+
+                        ud = UserDetail.objects.get(id=us.UserDetail_id)
+                        if (ud):
+                            try:
+
+
+                                if(ud.user_type==0):
+                                    cr = ItemOrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+                                else:
+                                    cr = ItemOrderHistory.objects.filter(user_id=ud.id).order_by("-booked_time")
+
+                                scr=ItemOrderHistorySerializer(cr,many=True)
+
+                                responsedata = {"successstatus": "ok", "history":scr.data}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                            except OrderHistory.DoesNotExist:
+                                responsedata = {"successstatus": "error","messsage": 'No history availabe for you with given details'}
+                                print(responsedata)
+                                return Response(responsedata)
+
+                    except Exception as e:
+                        responsedata = {"successstatus": "error", "message": "Unknown error occured"}
+                        print(responsedata)
+                        print("Error occured : ", e)
+                        exc_type, exc_obj, exc_tb = sys.exc_info()
+                        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        print(True, exc_type, fname, exc_tb.tb_lineno)
+                        return Response(responsedata)
+
+                    except UserDetail.DoesNotExist:
+
+                        responsedata = {"successstatus": "error", "message": "User Does Not Exist"}
+                        print(responsedata)
+                        return Response(responsedata)
+
+
+            except UserSession.DoesNotExist:
+                try:
+                    del request.session['username']
+                except:
+                    pass
+                responsedata = {"successstatus": "error", "message": "You are not logged in"}
+                return Response(responsedata)
+
+
+        except Exception as e:
+
+            responsedata = {"successstatus": "error", "message": "Unknown Error"}
+            print("in get order history : outer except : ", responsedata)
+            print("Error : ", e)
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(True, exc_type, fname, exc_tb.tb_lineno)
+            return Response(responsedata)
+
+
+
 
 
 class GetMySingleItemHistory(APIView):

@@ -247,14 +247,16 @@ MEDIA_ROOT=os.path.join(BASE_DIR,"media")
 MEDIA_URL="/media/"
 
 
-ALLOWED_HOSTS = ['192.168.200.2','192.168.200.2:8000','192.168.200.1','localhost','staging.euphern.com','staging.euphern.com:8001','192.168.200.9','192.168.200.9:8000']
+ALLOWED_HOSTS = ['149.56.101.211','149.56.101.211:8001','192.168.200.2','192.168.200.2:8000','192.168.200.1','localhost','staging.euphern.com','staging.euphern.com:8001','192.168.200.9','192.168.200.9:8000']
 
 #GMAIL CONNECTION DETAILS
 GMAIL_DETAIL={"EMAIL_HOST":"smtp.gmail.com","EMAIL_HOST_USER":"testeuphern@gmail.com","EMAIL_HOST_PASSWORD":"ApGf671!","EMAIL_USE_TLS" : True,"EMAIL_PORT":587}
 BASE_WEB_ADDRESS="http://192.168.200.2:8000/onelinkapp/"
 # BASE_DEV_WEB_MEDIA_ADDRESS="http://192.168.200.2:8000"
-BASE_DEV_WEB_MEDIA_ADDRESS="http://staging.euphern.com:8001"
+# BASE_DEV_WEB_MEDIA_ADDRESS="http://staging.euphern.com:8001"
+BASE_DEV_WEB_MEDIA_ADDRESS="http://149.56.101.211:8001"
 #BASE_IP="http://192.168.200.2:8000"
-BASE_IP="http://staging.euphern.com:8001"
+# BASE_IP="http://staging.euphern.com:8001"
+BASE_IP="http://149.56.101.211:8001"
 
 

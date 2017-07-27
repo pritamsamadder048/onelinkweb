@@ -86,9 +86,11 @@ urlpatterns = [
     url(r'^confirmrequest/$', views.ConfirmRequest.as_view(),name="confirmrequest"),
     url(r'^confirmitemrequest/$', views.ConfirmItemRequest.as_view(),name="confirmitemrequest"),
     url(r'^getmyhistory/$', views.GetMyHistory.as_view(),name="getmyhistory"),
+    url(r'^getmyhistoryp/$', views.GetMyHistoryP.as_view(),name="getmyhistoryp"),
     url(r'^getmysinglehistory/$', views.GetMySingleHistory.as_view(),name="getmysinglehistory"),
 
     url(r'^getmyitemhistory/$', views.GetMyItemHistory.as_view(),name="getmyitemhistory"),
+    url(r'^getmyitemhistoryp/$', views.GetMyItemHistoryP.as_view(),name="getmyitemhistoryp"),
     url(r'^getmysingleitemhistory/$', views.GetMySingleItemHistory.as_view(),name="getmysingleitemhistory"),
 
 
