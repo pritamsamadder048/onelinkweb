@@ -789,7 +789,7 @@ class Logout(APIView):
 
 class GetServiceCategory(APIView):
 
-    def get(self,request):
+    def get(self,request,lang):
         responsedata={}
         servicecategorydata=[]
 
@@ -806,9 +806,18 @@ class GetServiceCategory(APIView):
 
 
 
-                    tmpdata={"id":sc[i].id,"service_name":sc[i].service_name,"service_detail":sc[i].service_detail,"service_name_ch":sc[i].service_name_ch,"service_detail_ch":sc[i].service_detail_ch,"service_image":settings.BASE_IP+sc[i].service_image.url}
-                    #print(tmpdata)
-                    servicecategorydata.append(tmpdata)
+                    if(int(lang)==0):
+                        tmpdata={"id":sc[i].id,"service_name":sc[i].service_name,"service_detail":sc[i].service_detail,"service_image":settings.BASE_IP+sc[i].service_image.url}
+                        #print(tmpdata)
+                        servicecategorydata.append(tmpdata)
+                    elif(int(lang)==1):
+                        tmpdata={"id":sc[i].id,"service_name":sc[i].service_name_ch,"service_detail":sc[i].service_detail_ch,"service_image":settings.BASE_IP+sc[i].service_image.url}
+                        #print(tmpdata)
+                        servicecategorydata.append(tmpdata)
+                    else:
+                        tmpdata={"id":sc[i].id,"service_name":sc[i].service_name,"service_detail":sc[i].service_detail,"service_image":settings.BASE_IP+sc[i].service_image.url}
+                        #print(tmpdata)
+                        servicecategorydata.append(tmpdata)
 
                 #print(servicecategorydata)
                 #ssc=ServiceCategorySerializer(sc,many=True)
@@ -824,7 +833,7 @@ class GetServiceCategory(APIView):
 
 class GetProductCategory(APIView):
 
-    def get(self,request):
+    def get(self,request,lang):
         responsedata={}
         productcategorydata=[]
 
@@ -841,9 +850,18 @@ class GetProductCategory(APIView):
 
 
 
-                    tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_name_ch":pc[i].product_name_ch,"product_detail_ch":pc[i].product_detail_ch,"product_image":settings.BASE_IP+pc[i].product_image.url}
-                    #print(tmpdata)
-                    productcategorydata.append(tmpdata)
+                    if(int(lang)==0):
+                        tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_image":settings.BASE_IP+pc[i].product_image.url}
+                        #print(tmpdata)
+                        productcategorydata.append(tmpdata)
+                    elif(int(lang)==1):
+                        tmpdata={"id":pc[i].id,"product_name":pc[i].product_name_ch,"product_detail":pc[i].product_detail_ch,"product_image":settings.BASE_IP+pc[i].product_image.url}
+                        #print(tmpdata)
+                        productcategorydata.append(tmpdata)
+                    else:
+                        tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_image":settings.BASE_IP+pc[i].product_image.url}
+                        #print(tmpdata)
+                        productcategorydata.append(tmpdata)
 
                 #print(servicecategorydata)
                 #ssc=ServiceCategorySerializer(sc,many=True)

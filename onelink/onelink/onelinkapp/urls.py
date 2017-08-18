@@ -34,8 +34,8 @@ urlpatterns = [
     url(r'^login/$', views.Login.as_view(),name="login"),
     url(r'^logout/$', views.Logout.as_view(),name="logout"),
     url(r'^verifyuser/(?P<userid>[0-9]+)/(?P<vkey>[a-zA-Z0-9]+)/$', views.verifyuser,name="verifyuser"),
-    url(r'^getsurvicecategory/$', views.GetServiceCategory.as_view(),name="getservicecategory"),
-    url(r'^getproductcategory/$', views.GetProductCategory.as_view(),name="getproductcategory"),
+    url(r'^getsurvicecategory/(?P<lang>[0-1]+)/$', views.GetServiceCategory.as_view(),name="getservicecategory"),
+    url(r'^getproductcategory/(?P<lang>[0-1]+)/$', views.GetProductCategory.as_view(),name="getproductcategory"),
     url(r'^getsurvicesubcategory/(?P<serviceid>[0-9]+)/$', views.GetServiceSubCategory.as_view(),name="getservicesubcategory"),
 
     url(r'^getmyservices/$', views.GetMyServices.as_view(),name="getmyservices"),
