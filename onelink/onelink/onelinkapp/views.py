@@ -806,7 +806,7 @@ class GetServiceCategory(APIView):
 
 
 
-                    tmpdata={"id":sc[i].id,"service_name":sc[i].service_name,"service_detail":sc[i].service_detail,"service_image":settings.BASE_IP+sc[i].service_image.url}
+                    tmpdata={"id":sc[i].id,"service_name":sc[i].service_name,"service_detail":sc[i].service_detail,"service_name_ch":sc[i].service_name_ch,"service_detail_ch":sc[i].service_detail_ch,"service_image":settings.BASE_IP+sc[i].service_image.url}
                     #print(tmpdata)
                     servicecategorydata.append(tmpdata)
 
@@ -841,7 +841,7 @@ class GetProductCategory(APIView):
 
 
 
-                    tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_image":settings.BASE_IP+pc[i].product_image.url}
+                    tmpdata={"id":pc[i].id,"product_name":pc[i].product_name,"product_detail":pc[i].product_detail,"product_name_ch":pc[i].product_name_ch,"product_detail_ch":pc[i].product_detail_ch,"product_image":settings.BASE_IP+pc[i].product_image.url}
                     #print(tmpdata)
                     productcategorydata.append(tmpdata)
 
